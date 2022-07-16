@@ -17,6 +17,8 @@ typedef struct Rasteriser {
     uint32_t color;
 } Rasteriser;
 
+// TODO: method of storing objs
+
 // TODO: naming convention like SDL_* for struct functions?
 void set_color(Rasteriser* r, uint32_t color) {
     r->color = color;
@@ -25,13 +27,13 @@ void set_color(Rasteriser* r, uint32_t color) {
 void draw_pixel(Rasteriser* r, int x, int y) {
     size_t coord = y * SCREEN_WIDTH + x; 
     if (coord >= FRAMEBUFFER_LEN) {
-        printf("[WARN] Attempting to draw pixel outside of framebuffer!\n");
+        // printf("[WARN] Attempting to draw pixel outside of framebuffer!\n");
         return;
     }
     r->framebuffer[y * SCREEN_WIDTH + x] =  (((r->color >> 0) & 0xff) << 24) |
-        (((r->color >> 8) & 0xff) << 16) | 
-        (((r->color >> 16) & 0xff) << 8) | 
-        (((r->color >> 24) & 0xff) << 0);
+                                            (((r->color >> 8) & 0xff) << 16) | 
+                                            (((r->color >> 16) & 0xff) << 8) | 
+                                            (((r->color >> 24) & 0xff) << 0);
 }
 
 void draw_line(Rasteriser* r, int x0, int y0, int x1, int y1) {
@@ -78,9 +80,7 @@ void _draw_filled_triangle(Rasteriser* r,   int x0, int y0,
     // 3) At this point we are on the same y-coordinate for line V0V1 as well as for line V0V2.
     // 4) Draw the horizontal lines between both current line points.
     // 5) Repeat above steps until you triangle is completely rasterised.
-    printf("%d %d %d\n", x0, x1, x2);
-    printf("%d %d %d\n", y0, y1, y2);
-
+    
     // V0 -> V1
     int x00 = x0;
     int y00 = y0;
@@ -169,6 +169,7 @@ void draw_filled_triangle(Rasteriser* r,    int x0, int y0,
                                             int x1, int y1,
                                             int x2, int y2) {
     // From: http://www.sunshine2k.de/coding/java/TriangleRasterization/TriangleRasterization.html
+    // TODO: off by one inaccuracies?
     
     // ( This is bottm tri, ascending for top tri!! )
     // Sort 3 points in descending using their y coords
@@ -218,9 +219,56 @@ int main() {
     rasteriser.window = SDL_CreateWindow( "Tiny Renderer", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
     rasteriser.renderer = SDL_CreateRenderer(rasteriser.window, -1, SDL_RENDERER_ACCELERATED);
     rasteriser.texture = SDL_CreateTexture(rasteriser.renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING, SCREEN_WIDTH, SCREEN_HEIGHT);
-    memset(rasteriser.framebuffer, 0x00 , FRAMEBUFFER_LEN*4);
 
+    memset(rasteriser.framebuffer, 0x00 , FRAMEBUFFER_LEN*4);
     set_color(&rasteriser, 0xffffffff);
+
+    // Primitive obj loading
+    FILE* fp;
+    char buffer[1024];
+    int line = 0;
+    float vertexArray[16834 * 3]; // 3 coords per vertice
+    fp = fopen("teapot.obj", "r");
+    if (fp == NULL) {
+        return 2; //TODO: proper return codes
+    }
+
+    // Store vertex array, then start drawing once faces are encountered
+    char ignore;
+    float v0, v1, v2;
+    int i0, i1, i2;
+    while (fgets(buffer, sizeof(buffer), fp) != NULL) {
+        // single quote is for characters, double quote is for strings :0
+        if (buffer[0] == 'v' && buffer[1] == ' ') {
+            sscanf(buffer, "%c %f %f %f", &ignore, &v0, &v1, &v2);
+            // printf("%f %f %f\n", v0, v1, v2);
+            vertexArray[line*3] = v0;
+            vertexArray[line*3+1] = v1;
+            vertexArray[line*3+2] = v2;
+        } else if (buffer[0] == 'f') {
+            // form a triangle from i0 -> i1, i1 -> i2, i2 -> i0
+            sscanf(buffer, "%c %d %d %d", &ignore, &i0, &i1, &i2);
+            printf("%c %d %d %d\n", ignore, i0, i1, i2);
+            
+            int x0 = (vertexArray[(i0-1)*3]   + 1.)   * SCREEN_WIDTH  / 2.;
+            int y0 = (vertexArray[(i0-1)*3+1] + 1.)   * SCREEN_HEIGHT / 2.;
+            int x1 = (vertexArray[(i1-1)*3]   + 1.)   * SCREEN_WIDTH  / 2.;
+            int y1 = (vertexArray[(i1-1)*3+1] + 1.)   * SCREEN_HEIGHT / 2.;
+            int x2 = (vertexArray[(i2-1)*3]   + 1.)   * SCREEN_WIDTH  / 2.;
+            int y2 = (vertexArray[(i2-1)*3+1] + 1.)   * SCREEN_HEIGHT / 2.;
+            // printf("%d %d\n", x0, y0);
+            // draw_line(&rasteriser,x0, y0, x1, y1);
+            // draw_line(&rasteriser,x1, y1, x2, y2);
+            // draw_line(&rasteriser,x2, y2, x0, y0);
+            draw_triangle(&rasteriser,x0,y0,x1,y1,x2,y2);
+        }
+        ++line;
+    }
+    fclose(fp);
+
+    //for (int i = 0; i < 3644; i++) {
+    //    printf("%f %f %f\n", vertexArray[i*3], vertexArray[i*3+1], vertexArray[i*3+2]);
+    //}
 
     // Rendering loop
     char quit = 0;
@@ -233,16 +281,17 @@ int main() {
                 quit = 1;
                 break;
             case SDL_KEYDOWN:
-                memset(rasteriser.framebuffer, 0x00 , FRAMEBUFFER_LEN*4);
-                draw_filled_triangle(&rasteriser,   rand_range(0, SCREEN_WIDTH-1), rand_range(0, SCREEN_HEIGHT-1), 
-                                                    rand_range(0, SCREEN_WIDTH-1), rand_range(0, SCREEN_HEIGHT-1), 
-                                                    rand_range(0, SCREEN_WIDTH-1), rand_range(0, SCREEN_HEIGHT-1));
+                // memset(rasteriser.framebuffer, 0x00 , FRAMEBUFFER_LEN*4);
+                //draw_filled_triangle(&rasteriser,   rand_range(0, SCREEN_WIDTH-1), rand_range(0, SCREEN_HEIGHT-1), 
+                //                                    rand_range(0, SCREEN_WIDTH-1), rand_range(0, SCREEN_HEIGHT-1), 
+                //                                    rand_range(0, SCREEN_WIDTH-1), rand_range(0, SCREEN_HEIGHT-1));
+                break;
             }
         }
 
         SDL_RenderClear(rasteriser.renderer);
         SDL_UpdateTexture(rasteriser.texture, NULL, rasteriser.framebuffer, SCREEN_WIDTH * 4);
-        SDL_RenderCopy(rasteriser.renderer, rasteriser.texture, NULL, NULL );
+        SDL_RenderCopyEx(rasteriser.renderer, rasteriser.texture, NULL, NULL, 0, 0, SDL_FLIP_VERTICAL);
         SDL_RenderPresent(rasteriser.renderer);
     }
     return 0;
