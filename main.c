@@ -5,6 +5,10 @@ const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
 const int FRAMEBUFFER_LEN = SCREEN_WIDTH * SCREEN_HEIGHT;
 
+int rand_range(lower, upper) {
+    return rand() % (upper + 1 - lower) + lower; 
+}
+
 typedef struct Rasteriser {
     SDL_Window* window;
     SDL_Renderer* renderer;
@@ -198,13 +202,11 @@ void draw_filled_triangle(Rasteriser* r,    int x0, int y0,
 
     if (y1 == y2) {
         // Bottom tri (V1 == V2)
-        _draw_filled_triangle(r, x0, y0, x1, y1, x2, y2, 1);
+        _draw_filled_triangle(r, x0, y0, x1, y1, x2, y2, 0);
     } else if (y0 == y1) {
         // Top tri (V0 == V1)
         _draw_filled_triangle(r, x2, y2, x1, y1, x0, y0, 0);
     } else {
-        // Construct two triangles by creating 4th vertice
-        // V4 y coord = V1 y coord
         _draw_filled_triangle(r, x0, y0, x1, y1, x2, y2, 1);
     }
 }
@@ -216,11 +218,9 @@ int main() {
     rasteriser.window = SDL_CreateWindow( "Tiny Renderer", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
     rasteriser.renderer = SDL_CreateRenderer(rasteriser.window, -1, SDL_RENDERER_ACCELERATED);
     rasteriser.texture = SDL_CreateTexture(rasteriser.renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING, SCREEN_WIDTH, SCREEN_HEIGHT);
+    memset(rasteriser.framebuffer, 0x00 , FRAMEBUFFER_LEN*4);
 
     set_color(&rasteriser, 0xffffffff);
-    draw_filled_triangle(&rasteriser, 150, 479, 50, 200, 0, 300);
-    // draw_filled_triangle(&rasteriser, 0, 0, SCREEN_WIDTH-1, 0, 0, SCREEN_HEIGHT-1);
-    // draw_filled_triangle(&rasteriser, 0, 0, SCREEN_WIDTH-1, SCREEN_HEIGHT-1, 0, SCREEN_HEIGHT-1);
 
     // Rendering loop
     char quit = 0;
@@ -228,10 +228,16 @@ int main() {
         //Handle events on queue
         SDL_Event e;
         while(SDL_PollEvent(&e) != 0) {
-            //User requests quit
-            if (e.type == SDL_QUIT) {
+            switch (e.type) {
+            case SDL_QUIT:
                 quit = 1;
-            } 
+                break;
+            case SDL_KEYDOWN:
+                memset(rasteriser.framebuffer, 0x00 , FRAMEBUFFER_LEN*4);
+                draw_filled_triangle(&rasteriser,   rand_range(0, SCREEN_WIDTH-1), rand_range(0, SCREEN_HEIGHT-1), 
+                                                    rand_range(0, SCREEN_WIDTH-1), rand_range(0, SCREEN_HEIGHT-1), 
+                                                    rand_range(0, SCREEN_WIDTH-1), rand_range(0, SCREEN_HEIGHT-1));
+            }
         }
 
         SDL_RenderClear(rasteriser.renderer);
