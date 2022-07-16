@@ -1,8 +1,8 @@
 #include <SDL2/SDL.h>
 #include <stdio.h>
 
-const int SCREEN_WIDTH = 640;
-const int SCREEN_HEIGHT = 480;
+const int SCREEN_WIDTH = 720;
+const int SCREEN_HEIGHT = 720;
 const int FRAMEBUFFER_LEN = SCREEN_WIDTH * SCREEN_HEIGHT;
 
 int rand_range(lower, upper) {
@@ -228,27 +228,42 @@ int main() {
     char buffer[1024];
     int line = 0;
     float vertexArray[16834 * 3]; // 3 coords per vertice
-    fp = fopen("teapot.obj", "r");
+    fp = fopen("african_head.obj", "r");
     if (fp == NULL) {
         return 2; //TODO: proper return codes
     }
 
-    // Store vertex array, then start drawing once faces are encountered
     char ignore;
     float v0, v1, v2;
     int i0, i1, i2;
     while (fgets(buffer, sizeof(buffer), fp) != NULL) {
-        // single quote is for characters, double quote is for strings :0
         if (buffer[0] == 'v' && buffer[1] == ' ') {
             sscanf(buffer, "%c %f %f %f", &ignore, &v0, &v1, &v2);
             // printf("%f %f %f\n", v0, v1, v2);
             vertexArray[line*3] = v0;
             vertexArray[line*3+1] = v1;
             vertexArray[line*3+2] = v2;
+            //TODO: vertex textures, vertex normals
         } else if (buffer[0] == 'f') {
-            // form a triangle from i0 -> i1, i1 -> i2, i2 -> i0
-            sscanf(buffer, "%c %d %d %d", &ignore, &i0, &i1, &i2);
-            printf("%c %d %d %d\n", ignore, i0, i1, i2);
+            // We'll use the frequency of /'s to use the corresponding format string
+            // [f 1 2 3]                -> 0 /'s
+            // [f 3/1 4/2 5/3]          -> 3 /'s
+            // [f 7//1 8//2 9//3]       -> 6 /'s
+            // [f 6/4/1 3/5/3 7/6/5]    -> 9 /'s
+            
+            //TODO: does the / frequency stay constant throughout a file? If so we can find slash frequency outside of this while loop
+            int slashFrequency = 6; //TODO: char frequency function
+            char* fstring;
+            switch (slashFrequency) {
+                case 0: 
+                    fstring = "%c %d %d %d";
+                    sscanf(buffer, fstring, &ignore, &i0, &i1, &i2);
+                    break;
+                case 6:
+                    fstring = "%c %d/%d/%d %d/%d/%d %d/%d/%d";
+                    sscanf(buffer, fstring, &ignore, &i0, &ignore, &ignore, &i1, &ignore, &ignore, &i2, &ignore, &ignore);
+                    break;
+            }
             
             int x0 = (vertexArray[(i0-1)*3]   + 1.)   * SCREEN_WIDTH  / 2.;
             int y0 = (vertexArray[(i0-1)*3+1] + 1.)   * SCREEN_HEIGHT / 2.;
@@ -256,19 +271,11 @@ int main() {
             int y1 = (vertexArray[(i1-1)*3+1] + 1.)   * SCREEN_HEIGHT / 2.;
             int x2 = (vertexArray[(i2-1)*3]   + 1.)   * SCREEN_WIDTH  / 2.;
             int y2 = (vertexArray[(i2-1)*3+1] + 1.)   * SCREEN_HEIGHT / 2.;
-            // printf("%d %d\n", x0, y0);
-            // draw_line(&rasteriser,x0, y0, x1, y1);
-            // draw_line(&rasteriser,x1, y1, x2, y2);
-            // draw_line(&rasteriser,x2, y2, x0, y0);
             draw_triangle(&rasteriser,x0,y0,x1,y1,x2,y2);
         }
         ++line;
     }
     fclose(fp);
-
-    //for (int i = 0; i < 3644; i++) {
-    //    printf("%f %f %f\n", vertexArray[i*3], vertexArray[i*3+1], vertexArray[i*3+2]);
-    //}
 
     // Rendering loop
     char quit = 0;
@@ -291,6 +298,7 @@ int main() {
 
         SDL_RenderClear(rasteriser.renderer);
         SDL_UpdateTexture(rasteriser.texture, NULL, rasteriser.framebuffer, SCREEN_WIDTH * 4);
+        // use SDL_FLIP_VERTICAL because we live in a society where 0,0 is bottom left instead of top left
         SDL_RenderCopyEx(rasteriser.renderer, rasteriser.texture, NULL, NULL, 0, 0, SDL_FLIP_VERTICAL);
         SDL_RenderPresent(rasteriser.renderer);
     }
