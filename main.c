@@ -232,23 +232,26 @@ int main() {
     FILE* fp;
     char buffer[1024];
     int line = 0;
-    float vertexArray[16834 * 3]; // 3 coords per vertice
-    fp = fopen("african_head.obj", "r");
+    float vertexArray[16384 * 3]; // 3 coords per vertice
+    fp = fopen("./models/Ansem_and_Guardian/Ansem_and_Guardian.obj", "r");
     if (fp == NULL) {
         return 2; // TODO: proper return codes
     }
 
     char ignore;
-    float v0, v1, v2;
+    float v0, v1, v2, v3;
     int i0, i1, i2;
     while (fgets(buffer, sizeof(buffer), fp) != NULL) {
-        if (buffer[0] == 'v' && buffer[1] == ' ') {
-            sscanf(buffer, "%c %f %f %f", &ignore, &v0, &v1, &v2);
+        if (!strncmp(buffer, "v ", 2)) {
+            sscanf(buffer, "%c %f %f %f %f", &ignore, &v0, &v1, &v2, &v3);
             vertexArray[line * 3] = v0;
             vertexArray[line * 3 + 1] = v1;
             vertexArray[line * 3 + 2] = v2;
+            ++line;
             // TODO: vertex textures, vertex normals
-        } else if (buffer[0] == 'f') {
+        } else if (!strncmp(buffer, "o ", 2)) {
+            printf("%s\n", buffer);
+        } else if (!strncmp(buffer, "f ", 2)) {
             // clang-format off
             // We'll use the frequency of /'s to use the corresponding format string
             // [f 1 2 3]                -> 0 /'s 
@@ -259,12 +262,16 @@ int main() {
 
             // TODO: does the / frequency stay constant throughout a file? If so
             // we can find slash frequency outside of this while loop
-            int slashFrequency = 6; // TODO: char frequency function
+            int slashFrequency = 3; // TODO: char frequency function
             char* fstring;
             switch (slashFrequency) {
                 case 0:
                     fstring = "%c %d %d %d";
                     sscanf(buffer, fstring, &ignore, &i0, &i1, &i2);
+                    break;
+                case 3:
+                    fstring = "%c %d/%d %d/%d %d/%d";
+                    sscanf(buffer, fstring, &ignore, &i0, &ignore, &i1, &ignore, &i2, &ignore);
                     break;
                 case 6:
                     fstring = "%c %d/%d/%d %d/%d/%d %d/%d/%d";
@@ -273,16 +280,18 @@ int main() {
                     break;
             }
 
-            int x0 = (vertexArray[(i0 - 1) * 3] + 1.) * SCREEN_WIDTH / 2.;
-            int y0 = (vertexArray[(i0 - 1) * 3 + 1] + 1.) * SCREEN_HEIGHT / 2.;
-            int x1 = (vertexArray[(i1 - 1) * 3] + 1.) * SCREEN_WIDTH / 2.;
-            int y1 = (vertexArray[(i1 - 1) * 3 + 1] + 1.) * SCREEN_HEIGHT / 2.;
-            int x2 = (vertexArray[(i2 - 1) * 3] + 1.) * SCREEN_WIDTH / 2.;
-            int y2 = (vertexArray[(i2 - 1) * 3 + 1] + 1.) * SCREEN_HEIGHT / 2.;
+            float c0 = 200.;
+            float c1 = 800.;
+            // TODO: perspective projection, camera, and matrix library
+            int x0 = (vertexArray[(i0 - 1) * 3] + c0) * SCREEN_WIDTH / c1;
+            int y0 = (vertexArray[(i0 - 1) * 3 + 1] + c0) * SCREEN_HEIGHT / c1;
+            int x1 = (vertexArray[(i1 - 1) * 3] + c0) * SCREEN_WIDTH / c1;
+            int y1 = (vertexArray[(i1 - 1) * 3 + 1] + c0) * SCREEN_HEIGHT / c1;
+            int x2 = (vertexArray[(i2 - 1) * 3] + c0) * SCREEN_WIDTH / c1;
+            int y2 = (vertexArray[(i2 - 1) * 3 + 1] + c0) * SCREEN_HEIGHT / c1;
             set_color(&rasteriser, (rand_range(0, 0xffffff) << 8) | 0xff);
             draw_filled_triangle(&rasteriser,x0,y0,x1,y1,x2,y2);
         }
-        ++line;
     }
     fclose(fp);
 
