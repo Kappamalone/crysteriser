@@ -213,8 +213,8 @@ void draw_filled_triangle(Rasteriser* r, int x0, int y0, int x1, int y1, int x2,
     }
 }
 
-int main() {
-    // Initial SDL setup
+int main(int argc, char* argv[]) {
+    // Initial SDL and Rasteriser setup
     Rasteriser rasteriser;
     rasteriser.window = SDL_CreateWindow(
         "Tiny Renderer", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
@@ -233,20 +233,25 @@ int main() {
     char buffer[1024];
     int line = 0;
     float vertexArray[16384 * 3]; // 3 coords per vertice
-    fp = fopen("./models/Ansem_and_Guardian/Ansem_and_Guardian.obj", "r");
+    fp = fopen(argv[1], "r");
+    // fp = fopen("./models/Ansem_and_Guardian/Ansem_and_Guardian.obj", "r");
+    // fp = fopen("./models/level/di00_01.obj", "r");
     if (fp == NULL) {
         return 2; // TODO: proper return codes
     }
 
     char ignore;
-    float v0, v1, v2, v3;
+    float v0, v1, v2;
+    float v3 = 1.; // if not specified, w is 1. by default
     int i0, i1, i2;
+
     while (fgets(buffer, sizeof(buffer), fp) != NULL) {
         if (!strncmp(buffer, "v ", 2)) {
             sscanf(buffer, "%c %f %f %f %f", &ignore, &v0, &v1, &v2, &v3);
-            vertexArray[line * 3] = v0;
-            vertexArray[line * 3 + 1] = v1;
-            vertexArray[line * 3 + 2] = v2;
+            vertexArray[line * 4] = v0;
+            vertexArray[line * 4 + 1] = v1;
+            vertexArray[line * 4 + 2] = v2;
+            vertexArray[line * 4 + 3] = v3;
             ++line;
             // TODO: vertex textures, vertex normals
         } else if (!strncmp(buffer, "o ", 2)) {
@@ -262,7 +267,7 @@ int main() {
 
             // TODO: does the / frequency stay constant throughout a file? If so
             // we can find slash frequency outside of this while loop
-            int slashFrequency = 3; // TODO: char frequency function
+            int slashFrequency = 6; // TODO: char frequency function
             char* fstring;
             switch (slashFrequency) {
                 case 0:
@@ -271,7 +276,8 @@ int main() {
                     break;
                 case 3:
                     fstring = "%c %d/%d %d/%d %d/%d";
-                    sscanf(buffer, fstring, &ignore, &i0, &ignore, &i1, &ignore, &i2, &ignore);
+                    sscanf(buffer, fstring, &ignore, &i0, &ignore, &i1, &ignore,
+                           &i2, &ignore);
                     break;
                 case 6:
                     fstring = "%c %d/%d/%d %d/%d/%d %d/%d/%d";
@@ -280,17 +286,17 @@ int main() {
                     break;
             }
 
-            float c0 = 200.;
-            float c1 = 800.;
+            float c0 = 1.;
+            float c1 = 2.;
             // TODO: perspective projection, camera, and matrix library
-            int x0 = (vertexArray[(i0 - 1) * 3] + c0) * SCREEN_WIDTH / c1;
-            int y0 = (vertexArray[(i0 - 1) * 3 + 1] + c0) * SCREEN_HEIGHT / c1;
-            int x1 = (vertexArray[(i1 - 1) * 3] + c0) * SCREEN_WIDTH / c1;
-            int y1 = (vertexArray[(i1 - 1) * 3 + 1] + c0) * SCREEN_HEIGHT / c1;
-            int x2 = (vertexArray[(i2 - 1) * 3] + c0) * SCREEN_WIDTH / c1;
-            int y2 = (vertexArray[(i2 - 1) * 3 + 1] + c0) * SCREEN_HEIGHT / c1;
-            set_color(&rasteriser, (rand_range(0, 0xffffff) << 8) | 0xff);
-            draw_filled_triangle(&rasteriser,x0,y0,x1,y1,x2,y2);
+            int x0 = (vertexArray[(i0 - 1) * 4] + c0) * SCREEN_WIDTH / c1;
+            int y0 = (vertexArray[(i0 - 1) * 4 + 1] + c0) * SCREEN_HEIGHT / c1;
+            int x1 = (vertexArray[(i1 - 1) * 4] + c0) * SCREEN_WIDTH / c1;
+            int y1 = (vertexArray[(i1 - 1) * 4 + 1] + c0) * SCREEN_HEIGHT / c1;
+            int x2 = (vertexArray[(i2 - 1) * 4] + c0) * SCREEN_WIDTH / c1;
+            int y2 = (vertexArray[(i2 - 1) * 4 + 1] + c0) * SCREEN_HEIGHT / c1;
+            // set_color(&rasteriser, (rand_range(0, 0xffffff) << 8) | 0xff);
+            draw_triangle(&rasteriser, x0, y0, x1, y1, x2, y2);
         }
     }
     fclose(fp);
@@ -306,7 +312,8 @@ int main() {
                     quit = 1;
                     break;
                 case SDL_KEYDOWN:
-                    // TODO: there are still minor errors with the filled triangle 
+                    // TODO: there are still minor errors with the filled
+                    // triangle
                     /*
                     memset(rasteriser.framebuffer, 0x00, FRAMEBUFFER_LEN * 4);
                     int x0 = rand_range(0, SCREEN_WIDTH - 1);
