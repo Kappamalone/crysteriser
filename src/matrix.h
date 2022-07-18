@@ -38,7 +38,7 @@ void matrix_free(Matrix* mat) {
 
 // operates directly on mat0
 void matrix_multiply(Matrix* mat0, Matrix* mat1) {
-    ASSERT(mat0->columns == mat1->rows); 
+    ASSERT(mat0->columns == mat1->rows, "Invalid matrix multiplication!"); 
 }
 
  

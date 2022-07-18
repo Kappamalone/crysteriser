@@ -148,9 +148,7 @@ void _draw_filled_triangle(Rasteriser* r, int x0, int y0, int x1, int y1,
         }
 
         if (ychange0 && ychange1) {
-            if (y00 != y01) {
-                printf("[FATAL] Something is seriously wrong!\n");
-            }
+            ASSERT(y00 == y01, "Filling in triangles have never been this difficult");
             int startx, endx;
             if (x00 <= x01) {
                 startx = x00;
