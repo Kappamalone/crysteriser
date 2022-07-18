@@ -1,11 +1,11 @@
+#include "common.h"
+#include "matrix.h"
 #include <SDL2/SDL.h>
 #include <stdio.h>
 
 const int SCREEN_WIDTH = 720;
 const int SCREEN_HEIGHT = 720;
 const int FRAMEBUFFER_LEN = SCREEN_WIDTH * SCREEN_HEIGHT;
-
-int rand_range(lower, upper) { return rand() % (upper + 1 - lower) + lower; }
 
 typedef struct Rasteriser {
     SDL_Window* window;
@@ -340,5 +340,6 @@ int main(int argc, char* argv[]) {
                          0, SDL_FLIP_VERTICAL);
         SDL_RenderPresent(rasteriser.renderer);
     }
+    test();
     return 0;
 }

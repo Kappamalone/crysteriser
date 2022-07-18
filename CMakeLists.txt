@@ -8,6 +8,13 @@ option(RASTERISER_WARNINGS_AS_ERRORS "Warnings as errors" OFF)
 # Add the module directory to the list of paths
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/CMakeModules")
 
+# Disable in-source builds
+set(CMAKE_DISABLE_SOURCE_CHANGES ON)
+set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
+if ("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
+    message(SEND_ERROR "In-source builds are not allowed. Clean up the repository and start over.")
+endif()
+
 # Compiler flags
 if (MSVC)
     set(CXX_FLAGS
@@ -67,16 +74,4 @@ if (RASTERISER_TESTS)
     # add_subdirectory(tests)
 endif()
 
-# Actual project config
-
-find_package(SDL2 REQUIRED)
-# include_directories(${SDL2_INCLUDE_DIRS})
-
-set(SOURCES
-    main.c
-)
-
-
-add_executable(${PROJECT_NAME} ${SOURCES})
-target_include_directories(${PROJECT_NAME} PUBLIC ${SDL2_INCLUDE_DIRS})
-target_link_libraries(${PROJECT_NAME} PUBLIC ${SDL2_LIBRARIES})
+add_subdirectory(src)
