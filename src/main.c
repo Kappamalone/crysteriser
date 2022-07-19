@@ -11,18 +11,33 @@ typedef struct Rasteriser {
     SDL_Window* window;
     SDL_Renderer* renderer;
     SDL_Texture* texture;
-    uint32_t framebuffer[FRAMEBUFFER_LEN];
+    uint32_t* framebuffer;
     uint32_t color;
 } Rasteriser;
 
-// TODO: how do singletons work again
+// singleton
 typedef struct VertexData {
     float** vertexArrays;
     int**   vertexIndexArrays;
     float** vertexTextureArrays;
     float** vertexNormalArrays;
     int totalObjNumber;
-} ObjData;
+} VertexData;
+
+//https://stackoverflow.com/questions/12583908/naming-convention-for-constructors-and-destructors-in-c
+VertexData* vertexdata_new () {
+    static VertexData vertexdata; //TODO: malloc all the things (resizng malloced arrays?)
+    vertexdata.totalObjNumber = 0;
+    return &vertexdata;
+}
+
+void vertexdata_free(VertexData* vertexdata) {
+    free(vertexdata->vertexArrays);
+    free(vertexdata->vertexIndexArrays);
+    free(vertexdata->vertexTextureArrays);
+    free(vertexdata->vertexNormalArrays);
+}
+
 
 // TODO: naming convention like SDL_* for struct functions?
 void set_color(Rasteriser* r, uint32_t color) { r->color = color; }
@@ -221,6 +236,7 @@ void draw_filled_triangle(Rasteriser* r, int x0, int y0, int x1, int y1, int x2,
 int main(int argc, char* argv[]) {
     // Initial SDL and Rasteriser setup
     Rasteriser rasteriser;
+    rasteriser.framebuffer = (uint32_t*)malloc(sizeof(uint32_t) * FRAMEBUFFER_LEN);
     rasteriser.window = SDL_CreateWindow(
         "Tiny Renderer", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
         SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
