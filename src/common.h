@@ -18,5 +18,11 @@ do { \
 #endif
 
 int rand_range(int lower, int upper) { return rand() % (upper + 1 - lower) + lower; }
+int max(int a, int b) {
+    if (a >= b) {
+        return a;
+    }
+    return b;
+}
 
 #endif
