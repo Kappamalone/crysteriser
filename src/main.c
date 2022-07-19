@@ -15,7 +15,14 @@ typedef struct Rasteriser {
     uint32_t color;
 } Rasteriser;
 
-// TODO: method of storing objs
+// TODO: how do singletons work again
+typedef struct VertexData {
+    float** vertexArrays;
+    int**   vertexIndexArrays;
+    float** vertexTextureArrays;
+    float** vertexNormalArrays;
+    int totalObjNumber;
+} ObjData;
 
 // TODO: naming convention like SDL_* for struct functions?
 void set_color(Rasteriser* r, uint32_t color) { r->color = color; }
@@ -230,7 +237,7 @@ int main(int argc, char* argv[]) {
     FILE* fp;
     char buffer[1024];
     int line = 0;
-    float vertexArray[16384 * 3]; // 3 coords per vertice
+    float vertexArray[16384 * 4]; // 4 coords per vertice
     fp = fopen(argv[1], "r");
     // fp = fopen("./models/Ansem_and_Guardian/Ansem_and_Guardian.obj", "r");
     // fp = fopen("./models/level/di00_01.obj", "r");
@@ -242,6 +249,7 @@ int main(int argc, char* argv[]) {
     float v0, v1, v2;
     float v3 = 1.; // if not specified, w is 1. by default
     int i0, i1, i2;
+    char* fstring;
 
     while (fgets(buffer, sizeof(buffer), fp) != NULL) {
         if (!strncmp(buffer, "v ", 2)) {
@@ -266,7 +274,6 @@ int main(int argc, char* argv[]) {
             // TODO: does the / frequency stay constant throughout a file? If so
             // we can find slash frequency outside of this while loop
             int slashFrequency = 6; // TODO: char frequency function
-            char* fstring;
             switch (slashFrequency) {
                 case 0:
                     fstring = "%c %d %d %d";
