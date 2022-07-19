@@ -31,7 +31,7 @@ Matrix* matrix_new(int rows, int columns, ...) {
     return mat;
 }
 
-// for when we've already malloced the array values
+// for when we've already malloced the matrix values 
 Matrix* matrix_new_direct(int rows, int columns, float* values) {
     Matrix* mat = (Matrix*)malloc(sizeof(Matrix));
     mat->rows = rows;
@@ -74,18 +74,52 @@ Matrix* matrix_multiply(Matrix* mat0, Matrix* mat1) {
 
     int matSize = mat0->rows * mat1->columns;
     float* values = (float*)malloc(sizeof(float) * matSize);
+    int resRows = mat0->rows;
+    int resColumns = mat1->columns;
+    int pairs = mat0->columns;
+    // the row and column of the current index in the resultant matrix 
+    // corresponds to the row of mat0 and the column of mat1
+    // row of index             -> row of mat0
+    // column of index          -> column of mat1
+    // mat0 columns or mat1 rows -> pairs of terms to be added
+    for (int row = 0; row < resRows; row++) {
+        for (int column = 0; column < resColumns; column++) {
+            int index = column * resColumns + row;
+            // int index = column + row * resRows;
+            printf("index: %d\n", index);
+            float value = 0;
+            for (int i = 0; i < pairs; i++) {
+                // clang-format off
+                int mat0Index = row     * mat0->columns + i;
+                int mat1Index = column  + mat1->columns * i;
+                printf("mat0: index: %d\n", mat0Index);
+                printf("mat1: index: %d\n", mat1Index);
+                value += mat0->values[mat0Index] * mat1->values[mat1Index];
+                // clang-format on
+            }
+            values[index] = value;
+        }
+    }
+    /*
     int lineLength = max(mat0->rows, mat1->rows); // this = max(mat 0 row, mat 1 row) 
+    printf("line length: %d\n", lineLength);
     for (int i = 0; i < matSize; i++) {
         float value = 0;
         for (int j = 0; j < mat0->columns; j++) {
             // multiply rows of mat0 by columns of mat1
             // (i / lineLength) -> row of mat0 | column of mat1
-            // printf("mat0: index: %d\n", (i / lineLength) * mat0->rows + j]);
-            // printf("mat1: index: %d\n", (i / lineLength) + mat0->rows * j);
-            value += mat0->values[(i / lineLength) * mat0->rows + j] * mat1->values[(i / lineLength) + mat0->rows * j];
+            int mat0Index = (i / lineLength) * mat0->rows       +   j;
+            int mat1Index = (i / lineLength) + mat1->columns    *   j;
+            printf("mat0: index: %d\n", mat0Index);
+            printf("mat1: index: %d\n", mat1Index);
+            printf("i value    : %d\n", i);
+            // printf("\n");
+            value += mat0->values[mat0Index] * mat1->values[mat1Index];
         }
         values[i] = value;
     }
+    */
+
     return matrix_new_direct(mat0->rows, mat1->columns, values);
 }
 
@@ -97,8 +131,21 @@ void matrix_multiply_inplace(Matrix* mat0, Matrix* mat1) {
 
  
 void test() {
-    Matrix* m0 = matrix_new(1, 3,   1., 2., 3.);
-    Matrix* m1 = matrix_new(3, 1,   4., 5., 6.);
+    /*
+    Matrix* m0 = matrix_new(2, 3,   1., 2., 3.,
+                                    4., 5., 6.);
+    Matrix* m1 = matrix_new(3, 1,   1., 
+                                    2., 
+                                    3.);
+    // res ->                       a
+    //                              b
+    */
+    Matrix* m0 = matrix_new(3, 1,   1., 
+                                    2., 
+                                    3.);
+    Matrix* m1 = matrix_new(1, 3,   1., 2., 3.);
+    // res ->                       a
+    //                              b
 
 
 
