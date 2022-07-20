@@ -2,10 +2,9 @@
 #define VERTEXDATA_H
 
 #include "common.h"
+#include <stdio.h>
 #include <stdlib.h>
-
-// TODO: clang format on save, fix include errors for lsp, do realloc on obj
-// loading
+#include <string.h>
 
 // singleton
 typedef struct VertexData {
@@ -45,6 +44,7 @@ void vertexdata_push(VertexData* vd, float* vertexArray, int* vertexFaceArray,
         // WARNING: this will cause a memory leak if realloc fails, I'm just
         // being lazy here
         vd->objCapacity *= 2;
+        printf("resizing to %d objects!\n", vd->objCapacity);
         vd->vertexArrays = realloc(vd->vertexArrays,
                                    sizeof(*vd->vertexArrays) * vd->objCapacity);
         vd->vertexFaceArrays =
@@ -114,7 +114,7 @@ void vertexdata_load_obj(VertexData* vd, const char* file) {
             // [f 6/4/1 3/5/3 7/6/5]    -> 9 /'s
             // clang-format on
 
-            int slashFrequency = 0; // TODO: char frequency function
+            int slashFrequency = char_frequency(buffer, "/");
             switch (slashFrequency) {
                 case 0:
                     fstring = "%c %d %d %d";

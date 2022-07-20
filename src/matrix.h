@@ -60,8 +60,8 @@ Matrix* matrix_multiply(Matrix* mat0, Matrix* mat1) {
     // row0 by column0 * row1 by column1
     // addition pairs = column0
     // size of new matrix = row 0 * column1
-    ASSERT(mat0->columns == mat1->rows,
-           "Invalid dimensions for matrix multiplication!");
+    DASSERT(mat0->columns == mat1->rows,
+            "Invalid dimensions for matrix multiplication!");
 
     int matSize = mat0->rows * mat1->columns;
     float* values = malloc(sizeof(float) * matSize);
@@ -95,14 +95,9 @@ Matrix* matrix_multiply(Matrix* mat0, Matrix* mat1) {
     return matrix_new_direct(mat0->rows, mat1->columns, values);
 }
 
-// operates directly on mat0 if both matrices are square and of the same
-// dimensions
+// operates directly on mat1 if output matrix has the same dimensions as mat1
 void matrix_multiply_inplace(Matrix* mat0, Matrix* mat1) {
-    ASSERT((mat0->rows == mat0->columns) && (mat1->rows == mat1->columns),
-           "Square matrices not provided!");
-    ASSERT(mat0->rows == mat1->rows,
-           "Matrices of same dimension not provided!");
-
+    DASSERT(mat0->columns == mat1->columns, "in place conditions not met!");
     int matSize = mat0->rows * mat1->columns;
     float* values = malloc(sizeof(float) * matSize);
     int resRows = mat0->rows;
@@ -123,8 +118,9 @@ void matrix_multiply_inplace(Matrix* mat0, Matrix* mat1) {
             values[index] = value;
         }
     }
-    free(mat0->values);
-    mat0->values = values;
+
+    free(mat1->values);
+    mat1->values = values;
 }
 
 #endif

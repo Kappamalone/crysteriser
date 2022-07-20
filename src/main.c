@@ -2,6 +2,7 @@
 #include "matrix.h"
 #include "rasteriser.h"
 #include "vertexdata.h"
+#include <math.h>
 #include <stdio.h>
 
 int main(int argc, char* argv[]) {
@@ -21,32 +22,15 @@ int main(int argc, char* argv[]) {
     set_color(&rasteriser, 0xffffffff);
 
     VertexData* vd = vertexdata_new();
-    // vertexdata_load_obj(vd, "../models/african_head.obj");
-    vertexdata_load_obj(vd, "../models/teapot.obj");
-    float c0 = 1.;
-    float c1 = 2.;
-    for (int i = 0; i < vd->objs; i++) {
-        for (int j = 0; j < vd->vertexFaceLengths[i]; j += 3) {
-            int f0 = vd->vertexFaceArrays[i][j];
-            int f1 = vd->vertexFaceArrays[i][j + 1];
-            int f2 = vd->vertexFaceArrays[i][j + 2];
-            int x0 =
-                (vd->vertexArrays[i][(f0 - 1) * 4] + c0) * SCREEN_WIDTH / c1;
-            int x1 =
-                (vd->vertexArrays[i][(f1 - 1) * 4] + c0) * SCREEN_WIDTH / c1;
-            int x2 =
-                (vd->vertexArrays[i][(f2 - 1) * 4] + c0) * SCREEN_WIDTH / c1;
-            int y0 = (vd->vertexArrays[i][(f0 - 1) * 4 + 1] + c0) *
-                     SCREEN_WIDTH / c1;
-            int y1 = (vd->vertexArrays[i][(f1 - 1) * 4 + 1] + c0) *
-                     SCREEN_WIDTH / c1;
-            int y2 = (vd->vertexArrays[i][(f2 - 1) * 4 + 1] + c0) *
-                     SCREEN_WIDTH / c1;
+    vertexdata_load_obj(vd, "../models/african_head.obj");
+    // vertexdata_load_obj(vd, "../models/teapot.obj");
 
-            // set_color(&rasteriser, (rand_range(0, 0xffffff) << 8) | 0xff);
-            draw_triangle(&rasteriser, x0, y0, x1, y1, x2, y2);
-        }
-    }
+    // clang-format off
+    Matrix* projectionMatrix = matrix_new(4,4,  0., 0., 0., 0.,
+                                                0., 0., 0., 0.,
+                                                0., 0., 0., 0.,
+                                                0., 0., 0., 0.);
+    // clang-format on
 
     // Rendering loop
     char quit = 0;
@@ -75,6 +59,42 @@ int main(int argc, char* argv[]) {
                     draw_filled_triangle(&rasteriser, x0, y0, x1, y1, x2, y2);
                     */
                     break;
+            }
+        }
+
+        for (int i = 0; i < vd->objs; i++) {
+            for (int j = 0; j < vd->vertexFaceLengths[i]; j += 3) {
+                int f0 = vd->vertexFaceArrays[i][j];
+                int f1 = vd->vertexFaceArrays[i][j + 1];
+                int f2 = vd->vertexFaceArrays[i][j + 2];
+
+                // take each vertex, project using matrices, then draw tris
+                float x0 = vd->vertexArrays[i][(f0 - 1) * 4];
+                float y0 = vd->vertexArrays[i][(f0 - 1) * 4 + 1];
+                float z0 = vd->vertexArrays[i][(f0 - 1) * 4 + 2];
+                float w0 = vd->vertexArrays[i][(f0 - 1) * 4 + 3];
+                float x1 = vd->vertexArrays[i][(f1 - 1) * 4];
+                float y1 = vd->vertexArrays[i][(f1 - 1) * 4 + 1];
+                float z1 = vd->vertexArrays[i][(f1 - 1) * 4 + 2];
+                float w1 = vd->vertexArrays[i][(f1 - 1) * 4 + 3];
+                float x2 = vd->vertexArrays[i][(f2 - 1) * 4];
+                float y2 = vd->vertexArrays[i][(f2 - 1) * 4 + 1];
+                float z2 = vd->vertexArrays[i][(f2 - 1) * 4 + 2];
+                float w2 = vd->vertexArrays[i][(f2 - 1) * 4 + 3];
+
+                Matrix* mat0 = matrix_new(1, 4, x0, y0, z0, w0);
+                Matrix* mat1 = matrix_new(1, 4, x1, y1, z1, w1);
+                Matrix* mat2 = matrix_new(1, 4, x2, y2, z2, w2);
+
+                // clang-format off
+                draw_triangle(&rasteriser,  (mat0->values[0] + 1.) / 2 * SCREEN_WIDTH, (mat0->values[1] + 1) / 2 * SCREEN_HEIGHT,
+                                            (mat1->values[0] + 1.) / 2 * SCREEN_WIDTH, (mat1->values[1] + 1) / 2 * SCREEN_HEIGHT,
+                                            (mat2->values[0] + 1.) / 2 * SCREEN_WIDTH, (mat2->values[1] + 1) / 2 * SCREEN_HEIGHT);
+                // clang-format on
+
+                matrix_free(mat2);
+                matrix_free(mat1);
+                matrix_free(mat0);
             }
         }
 

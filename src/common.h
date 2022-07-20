@@ -31,5 +31,16 @@ int rand_range(int lower, int upper) {
 }
 int max(int a, int b) { return (a > b) ? a : b; }
 int min(int a, int b) { return (a > b) ? b : a; }
+int char_frequency(const char* string, const char* c) {
+    // TODO: const char* vs char[] vs char?
+    int i = 0;
+    int freq = 0;
+    while (string[i] != '\0') {
+        if (string[i++] == c[0]) {
+            ++freq;
+        }
+    }
+    return freq;
+}
 
 #endif
