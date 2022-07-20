@@ -71,7 +71,7 @@ endif()
 if (RASTERISER_TESTS)
     message("Buliding tests!")
     # Enable unit-testing.
-    # add_subdirectory(tests)
+    add_subdirectory(tests)
 endif()
 
 add_subdirectory(src)
