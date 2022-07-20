@@ -1,12 +1,12 @@
 #ifndef MATRIX_H
 #define MATRIX_H
 
+#include "common.h"
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdarg.h>
-#include "common.h"
 
-//TODO: should probably do some error checking...
+// TODO: should probably do some error checking...
 
 typedef struct Matrix {
     int rows;
@@ -21,7 +21,8 @@ Matrix* matrix_new(int rows, int columns, ...) {
     mat->values = (float*)malloc(sizeof(float) * rows * columns);
 
     va_list va;
-    columns *= rows; // now columns = number of items in matrix, because explicitly stating that is lame 
+    columns *= rows; // now columns = number of items in matrix, because
+                     // explicitly stating that is lame
     va_start(va, columns);
     for (int i = 0; i < columns; i++) {
         mat->values[i] = (float)va_arg(va, double);
@@ -31,7 +32,7 @@ Matrix* matrix_new(int rows, int columns, ...) {
     return mat;
 }
 
-// for when we've already malloced the matrix values 
+// for when we've already malloced the matrix values
 Matrix* matrix_new_direct(int rows, int columns, float* values) {
     Matrix* mat = (Matrix*)malloc(sizeof(Matrix));
     mat->rows = rows;
@@ -59,14 +60,15 @@ Matrix* matrix_multiply(Matrix* mat0, Matrix* mat1) {
     // row0 by column0 * row1 by column1
     // addition pairs = column0
     // size of new matrix = row 0 * column1
-    ASSERT(mat0->columns == mat1->rows, "Invalid dimensions for matrix multiplication!"); 
+    ASSERT(mat0->columns == mat1->rows,
+           "Invalid dimensions for matrix multiplication!");
 
     int matSize = mat0->rows * mat1->columns;
     float* values = (float*)malloc(sizeof(float) * matSize);
     int resRows = mat0->rows;
     int resColumns = mat1->columns;
     int pairs = mat0->columns;
-    // the row and column of the current index in the resultant matrix 
+    // the row and column of the current index in the resultant matrix
     // corresponds to the row of mat0 and the column of mat1
     // row of index             -> row of mat0
     // column of index          -> column of mat1
@@ -93,10 +95,13 @@ Matrix* matrix_multiply(Matrix* mat0, Matrix* mat1) {
     return matrix_new_direct(mat0->rows, mat1->columns, values);
 }
 
-// operates directly on mat0 if both matrices are square and of the same dimensions 
+// operates directly on mat0 if both matrices are square and of the same
+// dimensions
 void matrix_multiply_inplace(Matrix* mat0, Matrix* mat1) {
-    ASSERT((mat0->rows == mat0->columns) && (mat1->rows == mat1->columns), "Square matrices not provided!");
-    ASSERT(mat0->rows == mat1->rows, "Matrices of same dimension not provided!");
+    ASSERT((mat0->rows == mat0->columns) && (mat1->rows == mat1->columns),
+           "Square matrices not provided!");
+    ASSERT(mat0->rows == mat1->rows,
+           "Matrices of same dimension not provided!");
 
     int matSize = mat0->rows * mat1->columns;
     float* values = (float*)malloc(sizeof(float) * matSize);
@@ -123,4 +128,3 @@ void matrix_multiply_inplace(Matrix* mat0, Matrix* mat1) {
 }
 
 #endif
- 

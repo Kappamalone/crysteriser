@@ -1,8 +1,7 @@
-#include <stdio.h>
 #include "matrix_test.h"
+#include <stdio.h>
 
-#define TEST(x) \
-    x##_test()
+#define TEST(x) x##_test()
 
 int main() {
     printf(" ---- Running tests! ---- \n");

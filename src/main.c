@@ -18,18 +18,19 @@ typedef struct Rasteriser {
 // singleton
 typedef struct VertexData {
     float** vertexArrays;
-    int**   vertexFaceArrays;
+    int** vertexFaceArrays;
     float** vertexTextureArrays;
     float** vertexNormalArrays;
     int* vertexFaceLengths; // number of tri's in each vertexFaceArray
-    int objs; // number of objects that we are (attempting) to render
-    int objCapacity; // used for resizing vertexArrays if we have a bunch of objects to render 
+    int objs;        // number of objects that we are (attempting) to render
+    int objCapacity; // used for resizing vertexArrays if we have a bunch of
+                     // objects to render
 } VertexData;
 
-//https://stackoverflow.com/questions/12583908/naming-convention-for-constructors-and-destructors-in-c
-VertexData* vertexdata_new () {
+// https://stackoverflow.com/questions/12583908/naming-convention-for-constructors-and-destructors-in-c
+VertexData* vertexdata_new() {
     static VertexData vd;
-    vd.objCapacity = 4; //TODO: change this once resizing is verified to work
+    vd.objCapacity = 4; // TODO: change this once resizing is verified to work
     vd.vertexArrays = (float**)malloc(sizeof(float*) * vd.objCapacity);
     vd.vertexFaceArrays = (int**)malloc(sizeof(int*) * vd.objCapacity);
     vd.vertexTextureArrays = (float**)malloc(sizeof(float*) * vd.objCapacity);
@@ -39,7 +40,9 @@ VertexData* vertexdata_new () {
     return &vd;
 }
 
-void vertexdata_push(VertexData* vd, float* vertexArray, int* vertexFaceArray, float* vertexTextureArray, float* vertexNormalArray, int vertexFaceLength) {
+void vertexdata_push(VertexData* vd, float* vertexArray, int* vertexFaceArray,
+                     float* vertexTextureArray, float* vertexNormalArray,
+                     int vertexFaceLength) {
     vd->vertexArrays[vd->objs] = vertexArray;
     vd->vertexFaceArrays[vd->objs] = vertexFaceArray;
     vd->vertexTextureArrays[vd->objs] = vertexTextureArray;
@@ -47,13 +50,23 @@ void vertexdata_push(VertexData* vd, float* vertexArray, int* vertexFaceArray, f
     vd->vertexFaceLengths[vd->objs] = vertexFaceLength;
     ++vd->objs;
     if (vd->objs == vd->objCapacity) {
-        // WARNING: this will cause a memory leak if realloc fails, I'm just being lazy here
+        // WARNING: this will cause a memory leak if realloc fails, I'm just
+        // being lazy here
         vd->objCapacity *= 2;
-        vd->vertexArrays = realloc(vd->vertexArrays, sizeof(vd->vertexArrays) * vd->objCapacity);
-        vd->vertexFaceArrays = realloc(vd->vertexFaceArrays, sizeof(vd->vertexFaceArrays) * vd->objCapacity);
-        vd->vertexTextureArrays = realloc(vd->vertexTextureArrays, sizeof(vd->vertexTextureArrays) * vd->objCapacity);
-        vd->vertexNormalArrays = realloc(vd->vertexNormalArrays, sizeof(vd->vertexNormalArrays) * vd->objCapacity);
-        vd->vertexFaceLengths  = realloc(vd->vertexFaceLengths, sizeof(vd->vertexFaceLengths) * vd->objCapacity);
+        vd->vertexArrays = realloc(vd->vertexArrays,
+                                   sizeof(vd->vertexArrays) * vd->objCapacity);
+        vd->vertexFaceArrays =
+            realloc(vd->vertexFaceArrays,
+                    sizeof(vd->vertexFaceArrays) * vd->objCapacity);
+        vd->vertexTextureArrays =
+            realloc(vd->vertexTextureArrays,
+                    sizeof(vd->vertexTextureArrays) * vd->objCapacity);
+        vd->vertexNormalArrays =
+            realloc(vd->vertexNormalArrays,
+                    sizeof(vd->vertexNormalArrays) * vd->objCapacity);
+        vd->vertexFaceLengths =
+            realloc(vd->vertexFaceLengths,
+                    sizeof(vd->vertexFaceLengths) * vd->objCapacity);
     }
 }
 
@@ -63,7 +76,6 @@ void vertexdata_free(VertexData* vertexdata) {
     free(vertexdata->vertexTextureArrays);
     free(vertexdata->vertexNormalArrays);
 }
-
 
 // TODO: naming convention like SDL_* for struct functions?
 void set_color(Rasteriser* r, uint32_t color) { r->color = color; }
@@ -196,7 +208,8 @@ void _draw_filled_triangle(Rasteriser* r, int x0, int y0, int x1, int y1,
         }
 
         if (ychange0 && ychange1) {
-            DASSERT(y00 == y01, "Filling in triangles has never been this difficult");
+            DASSERT(y00 == y01,
+                    "Filling in triangles has never been this difficult");
             int startx, endx;
             if (x00 <= x01) {
                 startx = x00;
@@ -260,17 +273,22 @@ void draw_filled_triangle(Rasteriser* r, int x0, int y0, int x1, int y1, int x2,
 }
 
 void load_obj(const char* file, VertexData* vd) {
-    // v*Count used for growing array if needed, and finally shrinking once all data has been read using realloc()
-    // v*Count also used to deallocate arrays if 0 (eg no vertex texture data in .obj file);
+    // v*Count used for growing array if needed, and finally shrinking once all
+    // data has been read using realloc() v*Count also used to deallocate arrays
+    // if 0 (eg no vertex texture data in .obj file);
     // TODO: resizing
     int capacity = 2048;
-    float* vertexArray = (float*)malloc(sizeof(float) * capacity * 4); // x,y,z,w per vertice 
+    float* vertexArray =
+        (float*)malloc(sizeof(float) * capacity * 4); // x,y,z,w per vertice
     int vCount = 0;
-    int* vertexFaceArray = (int*)malloc(sizeof(int) * capacity * 4); // x,y,z,w per vertice 
+    int* vertexFaceArray =
+        (int*)malloc(sizeof(int) * capacity * 4); // x,y,z,w per vertice
     int vFCount = 0;
-    float* vertexTextureArray = (float*)malloc(sizeof(float) * capacity * 4); // x,y,z,w per vertice 
+    float* vertexTextureArray =
+        (float*)malloc(sizeof(float) * capacity * 4); // x,y,z,w per vertice
     int vTCount = 0;
-    float* vertexNormalArray = (float*)malloc(sizeof(float) * capacity * 4); // x,y,z,w per vertice 
+    float* vertexNormalArray =
+        (float*)malloc(sizeof(float) * capacity * 4); // x,y,z,w per vertice
     int vNCount = 0;
 
     FILE* fp;
@@ -336,16 +354,22 @@ void load_obj(const char* file, VertexData* vd) {
         printf("No vertexes/faces defined in %s\n", file);
         return;
     }
-    if (!vTCount) { free(vertexTextureArray); }
-    if (!vNCount) { free(vertexNormalArray); }
+    if (!vTCount) {
+        free(vertexTextureArray);
+    }
+    if (!vNCount) {
+        free(vertexNormalArray);
+    }
 
-    vertexdata_push(vd, vertexArray, vertexFaceArray, vertexTextureArray, vertexNormalArray, vFCount);
+    vertexdata_push(vd, vertexArray, vertexFaceArray, vertexTextureArray,
+                    vertexNormalArray, vFCount);
 }
 
 int main(int argc, char* argv[]) {
     // Initial SDL and Rasteriser setup
     Rasteriser rasteriser;
-    rasteriser.framebuffer = (uint32_t*)malloc(sizeof(uint32_t) * FRAMEBUFFER_LEN);
+    rasteriser.framebuffer =
+        (uint32_t*)malloc(sizeof(uint32_t) * FRAMEBUFFER_LEN);
     rasteriser.window = SDL_CreateWindow(
         "Tiny Renderer", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
         SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
@@ -357,7 +381,7 @@ int main(int argc, char* argv[]) {
 
     memset(rasteriser.framebuffer, 0x00, FRAMEBUFFER_LEN * 4);
     set_color(&rasteriser, 0xffffffff);
-    
+
     VertexData* vd = vertexdata_new();
     load_obj("../models/african_head.obj", vd);
     float c0 = 1.;
@@ -367,12 +391,18 @@ int main(int argc, char* argv[]) {
             int f0 = vd->vertexFaceArrays[i][j * 3];
             int f1 = vd->vertexFaceArrays[i][j * 3 + 1];
             int f2 = vd->vertexFaceArrays[i][j * 3 + 2];
-            int x0 = (vd->vertexArrays[i][(f0-1) * 4] + c0) * SCREEN_WIDTH / c1;
-            int x1 = (vd->vertexArrays[i][(f1-1) * 4] + c0) * SCREEN_WIDTH / c1;
-            int x2 = (vd->vertexArrays[i][(f2-1) * 4] + c0) * SCREEN_WIDTH / c1;
-            int y0 = (vd->vertexArrays[i][(f0-1) * 4 + 1] + c0) * SCREEN_WIDTH / c1;
-            int y1 = (vd->vertexArrays[i][(f1-1) * 4 + 1] + c0) * SCREEN_WIDTH / c1;
-            int y2 = (vd->vertexArrays[i][(f2-1) * 4 + 1] + c0) * SCREEN_WIDTH / c1;
+            int x0 =
+                (vd->vertexArrays[i][(f0 - 1) * 4] + c0) * SCREEN_WIDTH / c1;
+            int x1 =
+                (vd->vertexArrays[i][(f1 - 1) * 4] + c0) * SCREEN_WIDTH / c1;
+            int x2 =
+                (vd->vertexArrays[i][(f2 - 1) * 4] + c0) * SCREEN_WIDTH / c1;
+            int y0 = (vd->vertexArrays[i][(f0 - 1) * 4 + 1] + c0) *
+                     SCREEN_WIDTH / c1;
+            int y1 = (vd->vertexArrays[i][(f1 - 1) * 4 + 1] + c0) *
+                     SCREEN_WIDTH / c1;
+            int y2 = (vd->vertexArrays[i][(f2 - 1) * 4 + 1] + c0) *
+                     SCREEN_WIDTH / c1;
 
             // set_color(&rasteriser, (rand_range(0, 0xffffff) << 8) | 0xff);
             draw_triangle(&rasteriser, x0, y0, x1, y1, x2, y2);
