@@ -18,9 +18,10 @@ typedef struct Rasteriser {
 // singleton
 typedef struct VertexData {
     float** vertexArrays;
-    int**   vertexIndexArrays;
+    int**   vertexFaceArrays;
     float** vertexTextureArrays;
     float** vertexNormalArrays;
+    int* vertexFaceLengths; // number of tri's in each vertexFaceArray
     int objs; // number of objects that we are (attempting) to render
     int objCapacity; // used for resizing vertexArrays if we have a bunch of objects to render 
 } VertexData;
@@ -29,33 +30,36 @@ typedef struct VertexData {
 VertexData* vertexdata_new () {
     static VertexData vd;
     vd.objCapacity = 4; //TODO: change this once resizing is verified to work
-    vd.vertexArrays = (float**)malloc(sizeof(float**) * vd.objCapacity);
-    vd.vertexIndexArrays = (int**)malloc(sizeof(int**) * vd.objCapacity);
-    vd.vertexTextureArrays = (float**)malloc(sizeof(float**) * vd.objCapacity);
-    vd.vertexNormalArrays = (float**)malloc(sizeof(float**) * vd.objCapacity);
+    vd.vertexArrays = (float**)malloc(sizeof(float*) * vd.objCapacity);
+    vd.vertexFaceArrays = (int**)malloc(sizeof(int*) * vd.objCapacity);
+    vd.vertexTextureArrays = (float**)malloc(sizeof(float*) * vd.objCapacity);
+    vd.vertexNormalArrays = (float**)malloc(sizeof(float*) * vd.objCapacity);
+    vd.vertexFaceLengths = (int*)malloc(sizeof(int) * vd.objCapacity);
     vd.objs = 0;
     return &vd;
 }
 
-void vertexdata_push(VertexData* vd, float* vertexArray, int* vertexIndexArray, float* vertexTextureArray, float* vertexNormalArray) {
+void vertexdata_push(VertexData* vd, float* vertexArray, int* vertexFaceArray, float* vertexTextureArray, float* vertexNormalArray, int vertexFaceLength) {
     vd->vertexArrays[vd->objs] = vertexArray;
-    vd->vertexIndexArrays[vd->objs] = vertexIndexArray;
+    vd->vertexFaceArrays[vd->objs] = vertexFaceArray;
     vd->vertexTextureArrays[vd->objs] = vertexTextureArray;
     vd->vertexNormalArrays[vd->objs] = vertexNormalArray;
+    vd->vertexFaceLengths[vd->objs] = vertexFaceLength;
     ++vd->objs;
     if (vd->objs == vd->objCapacity) {
         // WARNING: this will cause a memory leak if realloc fails, I'm just being lazy here
         vd->objCapacity *= 2;
         vd->vertexArrays = realloc(vd->vertexArrays, sizeof(vd->vertexArrays) * vd->objCapacity);
-        vd->vertexIndexArrays = realloc(vd->vertexIndexArrays, sizeof(vd->vertexIndexArrays) * vd->objCapacity);
+        vd->vertexFaceArrays = realloc(vd->vertexFaceArrays, sizeof(vd->vertexFaceArrays) * vd->objCapacity);
         vd->vertexTextureArrays = realloc(vd->vertexTextureArrays, sizeof(vd->vertexTextureArrays) * vd->objCapacity);
         vd->vertexNormalArrays = realloc(vd->vertexNormalArrays, sizeof(vd->vertexNormalArrays) * vd->objCapacity);
+        vd->vertexFaceLengths  = realloc(vd->vertexFaceLengths, sizeof(vd->vertexFaceLengths) * vd->objCapacity);
     }
 }
 
 void vertexdata_free(VertexData* vertexdata) {
     free(vertexdata->vertexArrays);
-    free(vertexdata->vertexIndexArrays);
+    free(vertexdata->vertexFaceArrays);
     free(vertexdata->vertexTextureArrays);
     free(vertexdata->vertexNormalArrays);
 }
@@ -255,48 +259,42 @@ void draw_filled_triangle(Rasteriser* r, int x0, int y0, int x1, int y1, int x2,
     }
 }
 
-int main(int argc, char* argv[]) {
-    // Initial SDL and Rasteriser setup
-    Rasteriser rasteriser;
-    rasteriser.framebuffer = (uint32_t*)malloc(sizeof(uint32_t) * FRAMEBUFFER_LEN);
-    rasteriser.window = SDL_CreateWindow(
-        "Tiny Renderer", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-        SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
-    rasteriser.renderer =
-        SDL_CreateRenderer(rasteriser.window, -1, SDL_RENDERER_ACCELERATED);
-    rasteriser.texture = SDL_CreateTexture(
-        rasteriser.renderer, SDL_PIXELFORMAT_RGBA32,
-        SDL_TEXTUREACCESS_STREAMING, SCREEN_WIDTH, SCREEN_HEIGHT);
+void load_obj(const char* file, VertexData* vd) {
+    // v*Count used for growing array if needed, and finally shrinking once all data has been read using realloc()
+    // v*Count also used to deallocate arrays if 0 (eg no vertex texture data in .obj file);
+    // TODO: resizing
+    int capacity = 2048;
+    float* vertexArray = (float*)malloc(sizeof(float) * capacity * 4); // x,y,z,w per vertice 
+    int vCount = 0;
+    int* vertexFaceArray = (int*)malloc(sizeof(int) * capacity * 4); // x,y,z,w per vertice 
+    int vFCount = 0;
+    float* vertexTextureArray = (float*)malloc(sizeof(float) * capacity * 4); // x,y,z,w per vertice 
+    int vTCount = 0;
+    float* vertexNormalArray = (float*)malloc(sizeof(float) * capacity * 4); // x,y,z,w per vertice 
+    int vNCount = 0;
 
-    memset(rasteriser.framebuffer, 0x00, FRAMEBUFFER_LEN * 4);
-    set_color(&rasteriser, 0xffffffff);
-
-    // Primitive obj loading
     FILE* fp;
     char buffer[1024];
     int line = 0;
-    float vertexArray[16384 * 4]; // 4 coords per vertice
-    fp = fopen(argv[1], "r");
-    // fp = fopen("./models/Ansem_and_Guardian/Ansem_and_Guardian.obj", "r");
-    // fp = fopen("./models/level/di00_01.obj", "r");
+    fp = fopen(file, "r");
     if (fp == NULL) {
-        return 2; // TODO: proper return codes
+        printf("File not found!\n");
+        return;
+        // return 2; // TODO: proper return codes
     }
 
     char ignore;
-    float v0, v1, v2;
-    float v3 = 1.; // if not specified, w is 1. by default
+    float v0, v1, v2, v3 = 1.; // if not specified, w is 1. by default
     int i0, i1, i2;
     char* fstring;
-
     while (fgets(buffer, sizeof(buffer), fp) != NULL) {
         if (!strncmp(buffer, "v ", 2)) {
             sscanf(buffer, "%c %f %f %f %f", &ignore, &v0, &v1, &v2, &v3);
-            vertexArray[line * 4] = v0;
-            vertexArray[line * 4 + 1] = v1;
-            vertexArray[line * 4 + 2] = v2;
-            vertexArray[line * 4 + 3] = v3;
-            ++line;
+            vertexArray[vCount * 4] = v0;
+            vertexArray[vCount * 4 + 1] = v1;
+            vertexArray[vCount * 4 + 2] = v2;
+            vertexArray[vCount * 4 + 3] = v3;
+            ++vCount;
             // TODO: vertex textures, vertex normals
         } else if (!strncmp(buffer, "o ", 2)) {
             printf("%s\n", buffer);
@@ -309,8 +307,6 @@ int main(int argc, char* argv[]) {
             // [f 6/4/1 3/5/3 7/6/5]    -> 9 /'s
             // clang-format on
 
-            // TODO: does the / frequency stay constant throughout a file? If so
-            // we can find slash frequency outside of this while loop
             int slashFrequency = 6; // TODO: char frequency function
             switch (slashFrequency) {
                 case 0:
@@ -328,21 +324,60 @@ int main(int argc, char* argv[]) {
                            &ignore, &ignore, &i2, &ignore, &ignore);
                     break;
             }
+            vertexFaceArray[vFCount * 3] = i0;
+            vertexFaceArray[vFCount * 3 + 1] = i1;
+            vertexFaceArray[vFCount * 3 + 2] = i2;
+            ++vFCount;
+        }
+    }
+    fclose(fp);
 
-            float c0 = 1.;
-            float c1 = 2.;
-            // TODO: perspective projection, camera, and matrix library
-            int x0 = (vertexArray[(i0 - 1) * 4] + c0) * SCREEN_WIDTH / c1;
-            int y0 = (vertexArray[(i0 - 1) * 4 + 1] + c0) * SCREEN_HEIGHT / c1;
-            int x1 = (vertexArray[(i1 - 1) * 4] + c0) * SCREEN_WIDTH / c1;
-            int y1 = (vertexArray[(i1 - 1) * 4 + 1] + c0) * SCREEN_HEIGHT / c1;
-            int x2 = (vertexArray[(i2 - 1) * 4] + c0) * SCREEN_WIDTH / c1;
-            int y2 = (vertexArray[(i2 - 1) * 4 + 1] + c0) * SCREEN_HEIGHT / c1;
+    if (!vCount || !vFCount) {
+        printf("No vertexes/faces defined in %s\n", file);
+        return;
+    }
+    if (!vTCount) { free(vertexTextureArray); }
+    if (!vNCount) { free(vertexNormalArray); }
+
+    vertexdata_push(vd, vertexArray, vertexFaceArray, vertexTextureArray, vertexNormalArray, vFCount);
+}
+
+int main(int argc, char* argv[]) {
+    // Initial SDL and Rasteriser setup
+    Rasteriser rasteriser;
+    rasteriser.framebuffer = (uint32_t*)malloc(sizeof(uint32_t) * FRAMEBUFFER_LEN);
+    rasteriser.window = SDL_CreateWindow(
+        "Tiny Renderer", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+        SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+    rasteriser.renderer =
+        SDL_CreateRenderer(rasteriser.window, -1, SDL_RENDERER_ACCELERATED);
+    rasteriser.texture = SDL_CreateTexture(
+        rasteriser.renderer, SDL_PIXELFORMAT_RGBA32,
+        SDL_TEXTUREACCESS_STREAMING, SCREEN_WIDTH, SCREEN_HEIGHT);
+
+    memset(rasteriser.framebuffer, 0x00, FRAMEBUFFER_LEN * 4);
+    set_color(&rasteriser, 0xffffffff);
+    
+    VertexData* vd = vertexdata_new();
+    load_obj("../models/african_head.obj", vd);
+    float c0 = 1.;
+    float c1 = 2.;
+    for (int i = 0; i < vd->objs; i++) {
+        for (int j = 0; j < vd->vertexFaceLengths[i]; j++) {
+            int f0 = vd->vertexFaceArrays[i][j * 3];
+            int f1 = vd->vertexFaceArrays[i][j * 3 + 1];
+            int f2 = vd->vertexFaceArrays[i][j * 3 + 2];
+            int x0 = (vd->vertexArrays[i][(f0-1) * 4] + c0) * SCREEN_WIDTH / c1;
+            int x1 = (vd->vertexArrays[i][(f1-1) * 4] + c0) * SCREEN_WIDTH / c1;
+            int x2 = (vd->vertexArrays[i][(f2-1) * 4] + c0) * SCREEN_WIDTH / c1;
+            int y0 = (vd->vertexArrays[i][(f0-1) * 4 + 1] + c0) * SCREEN_WIDTH / c1;
+            int y1 = (vd->vertexArrays[i][(f1-1) * 4 + 1] + c0) * SCREEN_WIDTH / c1;
+            int y2 = (vd->vertexArrays[i][(f2-1) * 4 + 1] + c0) * SCREEN_WIDTH / c1;
+
             // set_color(&rasteriser, (rand_range(0, 0xffffff) << 8) | 0xff);
             draw_triangle(&rasteriser, x0, y0, x1, y1, x2, y2);
         }
     }
-    fclose(fp);
 
     // Rendering loop
     char quit = 0;
