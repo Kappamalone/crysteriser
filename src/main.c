@@ -21,14 +21,36 @@ typedef struct VertexData {
     int**   vertexIndexArrays;
     float** vertexTextureArrays;
     float** vertexNormalArrays;
-    int totalObjNumber;
+    int objs; // number of objects that we are (attempting) to render
+    int objCapacity; // used for resizing vertexArrays if we have a bunch of objects to render 
 } VertexData;
 
 //https://stackoverflow.com/questions/12583908/naming-convention-for-constructors-and-destructors-in-c
 VertexData* vertexdata_new () {
-    static VertexData vertexdata; //TODO: malloc all the things (resizng malloced arrays?)
-    vertexdata.totalObjNumber = 0;
-    return &vertexdata;
+    static VertexData vd;
+    vd.objCapacity = 4; //TODO: change this once resizing is verified to work
+    vd.vertexArrays = (float**)malloc(sizeof(float**) * vd.objCapacity);
+    vd.vertexIndexArrays = (int**)malloc(sizeof(int**) * vd.objCapacity);
+    vd.vertexTextureArrays = (float**)malloc(sizeof(float**) * vd.objCapacity);
+    vd.vertexNormalArrays = (float**)malloc(sizeof(float**) * vd.objCapacity);
+    vd.objs = 0;
+    return &vd;
+}
+
+void vertexdata_push(VertexData* vd, float* vertexArray, int* vertexIndexArray, float* vertexTextureArray, float* vertexNormalArray) {
+    vd->vertexArrays[vd->objs] = vertexArray;
+    vd->vertexIndexArrays[vd->objs] = vertexIndexArray;
+    vd->vertexTextureArrays[vd->objs] = vertexTextureArray;
+    vd->vertexNormalArrays[vd->objs] = vertexNormalArray;
+    ++vd->objs;
+    if (vd->objs == vd->objCapacity) {
+        // WARNING: this will cause a memory leak if realloc fails, I'm just being lazy here
+        vd->objCapacity *= 2;
+        vd->vertexArrays = realloc(vd->vertexArrays, sizeof(vd->vertexArrays) * vd->objCapacity);
+        vd->vertexIndexArrays = realloc(vd->vertexIndexArrays, sizeof(vd->vertexIndexArrays) * vd->objCapacity);
+        vd->vertexTextureArrays = realloc(vd->vertexTextureArrays, sizeof(vd->vertexTextureArrays) * vd->objCapacity);
+        vd->vertexNormalArrays = realloc(vd->vertexNormalArrays, sizeof(vd->vertexNormalArrays) * vd->objCapacity);
+    }
 }
 
 void vertexdata_free(VertexData* vertexdata) {
