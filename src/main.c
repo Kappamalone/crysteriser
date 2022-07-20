@@ -170,7 +170,7 @@ void _draw_filled_triangle(Rasteriser* r, int x0, int y0, int x1, int y1,
         }
 
         if (ychange0 && ychange1) {
-            ASSERT(y00 == y01, "Filling in triangles have never been this difficult");
+            DASSERT(y00 == y01, "Filling in triangles has never been this difficult");
             int startx, endx;
             if (x00 <= x01) {
                 startx = x00;
@@ -361,6 +361,5 @@ int main(int argc, char* argv[]) {
                          0, SDL_FLIP_VERTICAL);
         SDL_RenderPresent(rasteriser.renderer);
     }
-    test();
     return 0;
 }

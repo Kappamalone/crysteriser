@@ -1,7 +1,7 @@
 set(TESTS "${PROJECT_NAME}_tests")
 set(SOURCES
-    test_matrix.c
-    test_main.c
+    matrix_test.h
+    main_test.c
 )
 
 add_executable(${TESTS} ${SOURCES})

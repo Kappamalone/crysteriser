@@ -4,25 +4,34 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#ifndef NDEBUG
 #define ASSERT(c, m) \
 do { \
     if (!(c)) { \
-        fprintf(stderr, __FILE__ ":%d: assertion %s failed: %s\n", \
-                        __LINE__, #c, m); \
+        fprintf(stderr, "%s, line %d: assertion %s failed: %s\n", \
+                        __FILE__, __LINE__, #c, m); \
         exit(1); \
     } \
 } while(0)
+
+#ifndef NDEBUG
+#define DASSERT(c, m) ASSERT(c,m)
+#define TASSERT(c, m) \
+do { \
+    if (!(c)) { \
+        fprintf(stderr, "%s, line %d: assertion %s failed: %s\n", \
+                        __FILE__, __LINE__, #c, m); \
+    } \
+} while(0)
 #else
-#define ASSERT(c, m)
+#define DASSERT(c, m)
 #endif
 
 int rand_range(int lower, int upper) { return rand() % (upper + 1 - lower) + lower; }
 int max(int a, int b) {
-    if (a >= b) {
-        return a;
-    }
-    return b;
+    return (a > b) ? a : b;
+}
+int min(int a, int b) {
+    return (a > b) ? b : a;
 }
 
 #endif
