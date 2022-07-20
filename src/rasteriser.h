@@ -1,8 +1,8 @@
 #ifndef RASTERISER_H
 #define RASTERISER_H
 
-#include <SDL2/SDL.h>
 #include "common.h"
+#include <SDL2/SDL.h>
 
 const int SCREEN_WIDTH = 720;
 const int SCREEN_HEIGHT = 720;

@@ -1,8 +1,11 @@
 #ifndef VERTEXDATA_H
 #define VERTEXDATA_H
 
-#include <stdlib.h>
 #include "common.h"
+#include <stdlib.h>
+
+// TODO: clang format on save, fix include errors for lsp, do realloc on obj
+// loading
 
 // singleton
 typedef struct VertexData {
@@ -43,19 +46,19 @@ void vertexdata_push(VertexData* vd, float* vertexArray, int* vertexFaceArray,
         // being lazy here
         vd->objCapacity *= 2;
         vd->vertexArrays = realloc(vd->vertexArrays,
-                                   sizeof(vd->vertexArrays) * vd->objCapacity);
+                                   sizeof(*vd->vertexArrays) * vd->objCapacity);
         vd->vertexFaceArrays =
             realloc(vd->vertexFaceArrays,
-                    sizeof(vd->vertexFaceArrays) * vd->objCapacity);
+                    sizeof(*vd->vertexFaceArrays) * vd->objCapacity);
         vd->vertexTextureArrays =
             realloc(vd->vertexTextureArrays,
-                    sizeof(vd->vertexTextureArrays) * vd->objCapacity);
+                    sizeof(*vd->vertexTextureArrays) * vd->objCapacity);
         vd->vertexNormalArrays =
             realloc(vd->vertexNormalArrays,
-                    sizeof(vd->vertexNormalArrays) * vd->objCapacity);
+                    sizeof(*vd->vertexNormalArrays) * vd->objCapacity);
         vd->vertexFaceLengths =
             realloc(vd->vertexFaceLengths,
-                    sizeof(vd->vertexFaceLengths) * vd->objCapacity);
+                    sizeof(*vd->vertexFaceLengths) * vd->objCapacity);
     }
 }
 
@@ -66,24 +69,16 @@ void vertexdata_free(VertexData* vertexdata) {
     free(vertexdata->vertexNormalArrays);
 }
 
-
 void vertexdata_load_obj(VertexData* vd, const char* file) {
-    // v*Count used for growing array if needed, and finally shrinking once all
-    // data has been read using realloc() v*Count also used to deallocate arrays
-    // if 0 (eg no vertex texture data in .obj file);
-    // TODO: resizing
-    int capacity = 2048;
-    float* vertexArray =
-        malloc(sizeof(float) * capacity * 4); // x,y,z,w per vertice
+    int vertexBufferLen = 1024 * 1024; // allocate 1mb of buffer space for each
+                                       // array, then downsize at the end
+    float* vertexArray = malloc(vertexBufferLen); // x,y,z,w per vertice
     int vCount = 0;
-    int* vertexFaceArray =
-        malloc(sizeof(int) * capacity * 4); // x,y,z,w per vertice
+    int* vertexFaceArray = malloc(vertexBufferLen); // f1, f2, f3
     int vFCount = 0;
-    float* vertexTextureArray =
-        malloc(sizeof(float) * capacity * 4); // x,y,z,w per vertice
+    float* vertexTextureArray = malloc(vertexBufferLen); // TODO
     int vTCount = 0;
-    float* vertexNormalArray =
-        malloc(sizeof(float) * capacity * 4); // x,y,z,w per vertice
+    float* vertexNormalArray = malloc(vertexBufferLen); // TODO
     int vNCount = 0;
 
     FILE* fp;
@@ -103,11 +98,10 @@ void vertexdata_load_obj(VertexData* vd, const char* file) {
     while (fgets(buffer, sizeof(buffer), fp) != NULL) {
         if (!strncmp(buffer, "v ", 2)) {
             sscanf(buffer, "%c %f %f %f %f", &ignore, &v0, &v1, &v2, &v3);
-            vertexArray[vCount * 4] = v0;
-            vertexArray[vCount * 4 + 1] = v1;
-            vertexArray[vCount * 4 + 2] = v2;
-            vertexArray[vCount * 4 + 3] = v3;
-            ++vCount;
+            vertexArray[vCount++] = v0;
+            vertexArray[vCount++] = v1;
+            vertexArray[vCount++] = v2;
+            vertexArray[vCount++] = v3;
             // TODO: vertex textures, vertex normals
         } else if (!strncmp(buffer, "o ", 2)) {
             printf("%s\n", buffer);
@@ -120,7 +114,7 @@ void vertexdata_load_obj(VertexData* vd, const char* file) {
             // [f 6/4/1 3/5/3 7/6/5]    -> 9 /'s
             // clang-format on
 
-            int slashFrequency = 6; // TODO: char frequency function
+            int slashFrequency = 0; // TODO: char frequency function
             switch (slashFrequency) {
                 case 0:
                     fstring = "%c %d %d %d";
@@ -137,10 +131,9 @@ void vertexdata_load_obj(VertexData* vd, const char* file) {
                            &ignore, &ignore, &i2, &ignore, &ignore);
                     break;
             }
-            vertexFaceArray[vFCount * 3] = i0;
-            vertexFaceArray[vFCount * 3 + 1] = i1;
-            vertexFaceArray[vFCount * 3 + 2] = i2;
-            ++vFCount;
+            vertexFaceArray[vFCount++] = i0;
+            vertexFaceArray[vFCount++] = i1;
+            vertexFaceArray[vFCount++] = i2;
         }
     }
     fclose(fp);
@@ -149,6 +142,7 @@ void vertexdata_load_obj(VertexData* vd, const char* file) {
         printf("No vertexes/faces defined in %s\n", file);
         return;
     }
+
     if (!vTCount) {
         free(vertexTextureArray);
     }
@@ -156,9 +150,12 @@ void vertexdata_load_obj(VertexData* vd, const char* file) {
         free(vertexNormalArray);
     }
 
+    vertexArray = realloc(vertexArray, sizeof(*vertexArray) * vCount);
+    vertexFaceArray =
+        realloc(vertexFaceArray, sizeof(*vertexFaceArray) * vFCount);
+
     vertexdata_push(vd, vertexArray, vertexFaceArray, vertexTextureArray,
                     vertexNormalArray, vFCount);
 }
-
 
 #endif

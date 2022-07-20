@@ -1,14 +1,13 @@
-#include <stdio.h>
-#include "rasteriser.h"
-#include "vertexdata.h"
 #include "common.h"
 #include "matrix.h"
+#include "rasteriser.h"
+#include "vertexdata.h"
+#include <stdio.h>
 
 int main(int argc, char* argv[]) {
     // Initial SDL and Rasteriser setup
     Rasteriser rasteriser;
-    rasteriser.framebuffer =
-        malloc(sizeof(uint32_t) * FRAMEBUFFER_LEN);
+    rasteriser.framebuffer = malloc(sizeof(uint32_t) * FRAMEBUFFER_LEN);
     rasteriser.window = SDL_CreateWindow(
         "Tiny Renderer", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
         SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
@@ -22,15 +21,15 @@ int main(int argc, char* argv[]) {
     set_color(&rasteriser, 0xffffffff);
 
     VertexData* vd = vertexdata_new();
-    vertexdata_load_obj(vd, "../models/african_head.obj");
-    // vertexdata_load_obj(vd, "../models/teapot.obj");
+    // vertexdata_load_obj(vd, "../models/african_head.obj");
+    vertexdata_load_obj(vd, "../models/teapot.obj");
     float c0 = 1.;
     float c1 = 2.;
     for (int i = 0; i < vd->objs; i++) {
-        for (int j = 0; j < vd->vertexFaceLengths[i]; j++) {
-            int f0 = vd->vertexFaceArrays[i][j * 3];
-            int f1 = vd->vertexFaceArrays[i][j * 3 + 1];
-            int f2 = vd->vertexFaceArrays[i][j * 3 + 2];
+        for (int j = 0; j < vd->vertexFaceLengths[i]; j += 3) {
+            int f0 = vd->vertexFaceArrays[i][j];
+            int f1 = vd->vertexFaceArrays[i][j + 1];
+            int f2 = vd->vertexFaceArrays[i][j + 2];
             int x0 =
                 (vd->vertexArrays[i][(f0 - 1) * 4] + c0) * SCREEN_WIDTH / c1;
             int x1 =
