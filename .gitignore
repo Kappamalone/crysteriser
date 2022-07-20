@@ -1,3 +1,5 @@
 todo
+compile_commands.json
 build/
 models/
+.cache/

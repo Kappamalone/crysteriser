@@ -15,10 +15,10 @@ typedef struct Matrix {
 } Matrix;
 
 Matrix* matrix_new(int rows, int columns, ...) {
-    Matrix* mat = (Matrix*)malloc(sizeof(Matrix));
+    Matrix* mat = malloc(sizeof(Matrix));
     mat->rows = rows;
     mat->columns = columns;
-    mat->values = (float*)malloc(sizeof(float) * rows * columns);
+    mat->values = malloc(sizeof(float) * rows * columns);
 
     va_list va;
     columns *= rows; // now columns = number of items in matrix, because
@@ -34,7 +34,7 @@ Matrix* matrix_new(int rows, int columns, ...) {
 
 // for when we've already malloced the matrix values
 Matrix* matrix_new_direct(int rows, int columns, float* values) {
-    Matrix* mat = (Matrix*)malloc(sizeof(Matrix));
+    Matrix* mat = malloc(sizeof(Matrix));
     mat->rows = rows;
     mat->columns = columns;
     mat->values = values;
@@ -64,7 +64,7 @@ Matrix* matrix_multiply(Matrix* mat0, Matrix* mat1) {
            "Invalid dimensions for matrix multiplication!");
 
     int matSize = mat0->rows * mat1->columns;
-    float* values = (float*)malloc(sizeof(float) * matSize);
+    float* values = malloc(sizeof(float) * matSize);
     int resRows = mat0->rows;
     int resColumns = mat1->columns;
     int pairs = mat0->columns;
@@ -104,7 +104,7 @@ void matrix_multiply_inplace(Matrix* mat0, Matrix* mat1) {
            "Matrices of same dimension not provided!");
 
     int matSize = mat0->rows * mat1->columns;
-    float* values = (float*)malloc(sizeof(float) * matSize);
+    float* values = malloc(sizeof(float) * matSize);
     int resRows = mat0->rows;
     int resColumns = mat1->columns;
     int pairs = mat0->columns;

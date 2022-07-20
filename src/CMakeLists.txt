@@ -1,5 +1,7 @@
 set(SOURCES
     main.c
+    rasteriser.h
+    vertexdata.h
     matrix.h
     common.h
 )
