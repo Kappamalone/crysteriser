@@ -2,84 +2,59 @@
 #define VERTEXDATA_H
 
 #include "common.h"
+#include <glm/vec4.hpp>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 // singleton
 typedef struct VertexData {
+    // glm::vec4 tris;
+    // ignore others for now
     float** vertexArrays;
     int** vertexFaceArrays;
     float** vertexTextureArrays;
     float** vertexNormalArrays;
     int* vertexFaceLengths; // number of tri's in each vertexFaceArray
-    int objs;        // number of objects that we are (attempting) to render
-    int objCapacity; // used for resizing vertexArrays if we have a bunch of
-                     // objects to render
+    int objs; // number of objects that we are (attempting) to render
+    int objCapacity;
 } VertexData;
 
 // https://stackoverflow.com/questions/12583908/naming-convention-for-constructors-and-destructors-in-c
 VertexData* vertexdata_new() {
     static VertexData vd;
     vd.objCapacity = 4; // TODO: change this once resizing is verified to work
-    vd.vertexArrays = malloc(sizeof(float*) * vd.objCapacity);
-    vd.vertexFaceArrays = malloc(sizeof(int*) * vd.objCapacity);
-    vd.vertexTextureArrays = malloc(sizeof(float*) * vd.objCapacity);
-    vd.vertexNormalArrays = malloc(sizeof(float*) * vd.objCapacity);
-    vd.vertexFaceLengths = malloc(sizeof(int) * vd.objCapacity);
     vd.objs = 0;
     return &vd;
 }
 
-void vertexdata_push(VertexData* vd, float* vertexArray, int* vertexFaceArray,
-                     float* vertexTextureArray, float* vertexNormalArray,
-                     int vertexFaceLength) {
-    vd->vertexArrays[vd->objs] = vertexArray;
-    vd->vertexFaceArrays[vd->objs] = vertexFaceArray;
-    vd->vertexTextureArrays[vd->objs] = vertexTextureArray;
-    vd->vertexNormalArrays[vd->objs] = vertexNormalArray;
-    vd->vertexFaceLengths[vd->objs] = vertexFaceLength;
+void vertexdata_push(VertexData* vd) {
+    // vd->tris = tris;
     ++vd->objs;
     if (vd->objs == vd->objCapacity) {
         // WARNING: this will cause a memory leak if realloc fails, I'm just
         // being lazy here
         vd->objCapacity *= 2;
         printf("resizing to %d objects!\n", vd->objCapacity);
-        vd->vertexArrays = realloc(vd->vertexArrays,
-                                   sizeof(*vd->vertexArrays) * vd->objCapacity);
-        vd->vertexFaceArrays =
-            realloc(vd->vertexFaceArrays,
-                    sizeof(*vd->vertexFaceArrays) * vd->objCapacity);
-        vd->vertexTextureArrays =
-            realloc(vd->vertexTextureArrays,
-                    sizeof(*vd->vertexTextureArrays) * vd->objCapacity);
-        vd->vertexNormalArrays =
-            realloc(vd->vertexNormalArrays,
-                    sizeof(*vd->vertexNormalArrays) * vd->objCapacity);
+        /*
         vd->vertexFaceLengths =
             realloc(vd->vertexFaceLengths,
                     sizeof(*vd->vertexFaceLengths) * vd->objCapacity);
+        */
     }
 }
 
 void vertexdata_free(VertexData* vertexdata) {
-    free(vertexdata->vertexArrays);
-    free(vertexdata->vertexFaceArrays);
-    free(vertexdata->vertexTextureArrays);
-    free(vertexdata->vertexNormalArrays);
+    // free(vd->tris);
 }
 
 void vertexdata_load_obj(VertexData* vd, const char* file) {
     int vertexBufferLen = 1024 * 1024; // allocate 1mb of buffer space for each
                                        // array, then downsize at the end
     float* vertexArray = malloc(vertexBufferLen); // x,y,z,w per vertice
-    int vCount = 0;
-    int* vertexFaceArray = malloc(vertexBufferLen); // f1, f2, f3
-    int vFCount = 0;
-    float* vertexTextureArray = malloc(vertexBufferLen); // TODO
-    int vTCount = 0;
-    float* vertexNormalArray = malloc(vertexBufferLen); // TODO
-    int vNCount = 0;
+    // glm::vec4* tris = malloc(vertexBufferLen);
+    int vertexCount = 0;
+    int trisCount = 0;
 
     FILE* fp;
     char buffer[1024];
@@ -98,10 +73,10 @@ void vertexdata_load_obj(VertexData* vd, const char* file) {
     while (fgets(buffer, sizeof(buffer), fp) != NULL) {
         if (!strncmp(buffer, "v ", 2)) {
             sscanf(buffer, "%c %f %f %f %f", &ignore, &v0, &v1, &v2, &v3);
-            vertexArray[vCount++] = v0;
-            vertexArray[vCount++] = v1;
-            vertexArray[vCount++] = v2;
-            vertexArray[vCount++] = v3;
+            vertexArray[vertexCount++] = v0;
+            vertexArray[vertexCount++] = v1;
+            vertexArray[vertexCount++] = v2;
+            vertexArray[vertexCount++] = v3;
             // TODO: vertex textures, vertex normals
         } else if (!strncmp(buffer, "o ", 2)) {
             printf("%s\n", buffer);
@@ -131,31 +106,25 @@ void vertexdata_load_obj(VertexData* vd, const char* file) {
                            &ignore, &ignore, &i2, &ignore, &ignore);
                     break;
             }
+            /*
             vertexFaceArray[vFCount++] = i0;
             vertexFaceArray[vFCount++] = i1;
             vertexFaceArray[vFCount++] = i2;
+            */
+            ++trisCount;
         }
     }
+
     fclose(fp);
 
-    if (!vCount || !vFCount) {
+    if (!vertexCount || !trisCount) {
         printf("No vertexes/faces defined in %s\n", file);
         return;
     }
 
-    if (!vTCount) {
-        free(vertexTextureArray);
-    }
-    if (!vNCount) {
-        free(vertexNormalArray);
-    }
-
-    vertexArray = realloc(vertexArray, sizeof(*vertexArray) * vCount);
-    vertexFaceArray =
-        realloc(vertexFaceArray, sizeof(*vertexFaceArray) * vFCount);
-
-    vertexdata_push(vd, vertexArray, vertexFaceArray, vertexTextureArray,
-                    vertexNormalArray, vFCount);
+    free(vertexArray);
+    // realloc to change size of tris;
+    // vd->tris = tris;
 }
 
 #endif

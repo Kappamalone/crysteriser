@@ -1,10 +1,9 @@
-#include "matrix_test.h"
 #include <stdio.h>
 
 #define TEST(x) x##_test()
 
 int main() {
     printf(" ---- Running tests! ---- \n");
-    TEST(matrix);
+    // TEST(matrix);
     printf(" ---- Finishd tests! ---- \n");
 }

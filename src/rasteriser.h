@@ -17,9 +17,9 @@ typedef struct Rasteriser {
 } Rasteriser;
 
 // TODO: naming convention like SDL_* for struct functions?
-void set_color(Rasteriser* r, uint32_t color) { r->color = color; }
+void rasteriser_set_color(Rasteriser* r, uint32_t color) { r->color = color; }
 
-void draw_pixel(Rasteriser* r, int x, int y) {
+void rasteriser_draw_pixel(Rasteriser* r, int x, int y) {
     size_t coord = y * SCREEN_WIDTH + x;
     if (coord >= FRAMEBUFFER_LEN) {
         // printf("[WARN] Attempting to draw pixel outside of framebuffer!\n");
@@ -30,7 +30,7 @@ void draw_pixel(Rasteriser* r, int x, int y) {
         (((r->color >> 16) & 0xff) << 8) | (((r->color >> 24) & 0xff) << 0);
 }
 
-void draw_line(Rasteriser* r, int x0, int y0, int x1, int y1) {
+void rasteriser_draw_line(Rasteriser* r, int x0, int y0, int x1, int y1) {
     // We'll be using Bresenham's line drawing algorithm here. Should probably
     // look into line clipping Taken from:
     // http://members.chello.at/~easyfilter/bresenham.html
@@ -44,7 +44,7 @@ void draw_line(Rasteriser* r, int x0, int y0, int x1, int y1) {
     int e2; /* error value e_xy */
 
     while (1) {
-        draw_pixel(r, x0, y0);
+        rasteriser_draw_pixel(r, x0, y0);
 
         if (x0 == x1 && y0 == y1) {
             break; // exit if we've reached the final pixel
@@ -61,11 +61,11 @@ void draw_line(Rasteriser* r, int x0, int y0, int x1, int y1) {
     }
 }
 
-void draw_triangle(Rasteriser* r, int x0, int y0, int x1, int y1, int x2,
-                   int y2) {
-    draw_line(r, x0, y0, x1, y1);
-    draw_line(r, x1, y1, x2, y2);
-    draw_line(r, x2, y2, x0, y0);
+void rasteriser_draw_triangle(Rasteriser* r, int x0, int y0, int x1, int y1,
+                              int x2, int y2) {
+    rasteriser_draw_line(r, x0, y0, x1, y1);
+    rasteriser_draw_line(r, x1, y1, x2, y2);
+    rasteriser_draw_line(r, x2, y2, x0, y0);
 }
 
 void _draw_filled_triangle(Rasteriser* r, int x0, int y0, int x1, int y1,
@@ -116,7 +116,7 @@ void _draw_filled_triangle(Rasteriser* r, int x0, int y0, int x1, int y1,
             if (e20 >= dy0) {
                 err0 += dy0;
                 x00 += sx0;
-                draw_pixel(r, x00, y00);
+                rasteriser_draw_pixel(r, x00, y00);
             }
             if (e20 <= dx0) {
                 err0 += dx0;
@@ -137,7 +137,7 @@ void _draw_filled_triangle(Rasteriser* r, int x0, int y0, int x1, int y1,
             if (e21 >= dy1) {
                 err1 += dy1;
                 x01 += sx1;
-                draw_pixel(r, x01, y01);
+                rasteriser_draw_pixel(r, x01, y01);
             }
             if (e21 <= dx1) {
                 err1 += dx1;
@@ -158,7 +158,7 @@ void _draw_filled_triangle(Rasteriser* r, int x0, int y0, int x1, int y1,
                 endx = x00;
             }
             for (; startx <= endx; startx++) {
-                draw_pixel(r, startx, y00);
+                rasteriser_draw_pixel(r, startx, y00);
             }
             ychange0 = 0;
             ychange1 = 0;

@@ -75,3 +75,4 @@ if (RASTERISER_TESTS)
 endif()
 
 add_subdirectory(src)
+add_subdirectory(externals)
