@@ -75,8 +75,11 @@ Matrix* matrix_multiply(Matrix* mat0, Matrix* mat1) {
     // mat0 columns or mat1 rows -> pairs of terms to be added
     for (int column = 0; column < resColumns; column++) {
         for (int row = 0; row < resRows; row++) {
-            // int index = column * resColumns + row;
             int index = column + row * resRows;
+            // HACK: ?
+            if (resRows > resColumns) {
+                index /= resRows;
+            }
             // printf("index: %d\n", index);
             float value = 0;
             for (int off = 0; off < pairs; off++) {
@@ -97,7 +100,9 @@ Matrix* matrix_multiply(Matrix* mat0, Matrix* mat1) {
 
 // operates directly on mat1 if output matrix has the same dimensions as mat1
 void matrix_multiply_inplace(Matrix* mat0, Matrix* mat1) {
-    DASSERT(mat0->columns == mat1->columns, "in place conditions not met!");
+    DASSERT(mat0->columns == mat1->rows,
+            "Invalid dimensions for matrix multiplication!");
+    DASSERT(mat0->rows == mat1->rows, "in place conditions not met!");
     int matSize = mat0->rows * mat1->columns;
     float* values = malloc(sizeof(float) * matSize);
     int resRows = mat0->rows;
@@ -107,6 +112,10 @@ void matrix_multiply_inplace(Matrix* mat0, Matrix* mat1) {
     for (int column = 0; column < resColumns; column++) {
         for (int row = 0; row < resRows; row++) {
             int index = column + row * resRows;
+            // HACK: ?
+            if (resRows > resColumns) {
+                index /= resRows;
+            }
             float value = 0;
             for (int off = 0; off < pairs; off++) {
                 // clang-format off

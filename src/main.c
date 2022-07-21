@@ -22,11 +22,11 @@ int main(int argc, char* argv[]) {
     set_color(&rasteriser, 0xffffffff);
 
     VertexData* vd = vertexdata_new();
-    vertexdata_load_obj(vd, "../models/african_head.obj");
-    // vertexdata_load_obj(vd, "../models/teapot.obj");
+    // vertexdata_load_obj(vd, "../models/african_head.obj");
+    vertexdata_load_obj(vd, "../models/teapot.obj");
 
     // clang-format off
-    Matrix* projectionMatrix = matrix_new(4,4,  0., 0., 0., 0.,
+    Matrix* projectionMatrix = matrix_new(4,4,  0,  0., 0., 0.,
                                                 0., 0., 0., 0.,
                                                 0., 0., 0., 0.,
                                                 0., 0., 0., 0.);
@@ -82,9 +82,13 @@ int main(int argc, char* argv[]) {
                 float z2 = vd->vertexArrays[i][(f2 - 1) * 4 + 2];
                 float w2 = vd->vertexArrays[i][(f2 - 1) * 4 + 3];
 
-                Matrix* mat0 = matrix_new(1, 4, x0, y0, z0, w0);
-                Matrix* mat1 = matrix_new(1, 4, x1, y1, z1, w1);
-                Matrix* mat2 = matrix_new(1, 4, x2, y2, z2, w2);
+                Matrix* mat0 = matrix_new(4, 1, x0, y0, z0, w0);
+                Matrix* mat1 = matrix_new(4, 1, x1, y1, z1, w1);
+                Matrix* mat2 = matrix_new(4, 1, x2, y2, z2, w2);
+
+                matrix_multiply_inplace(projectionMatrix, mat0);
+                matrix_multiply_inplace(projectionMatrix, mat1);
+                matrix_multiply_inplace(projectionMatrix, mat2);
 
                 // clang-format off
                 draw_triangle(&rasteriser,  (mat0->values[0] + 1.) / 2 * SCREEN_WIDTH, (mat0->values[1] + 1) / 2 * SCREEN_HEIGHT,
