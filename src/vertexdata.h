@@ -2,20 +2,15 @@
 #define VERTEXDATA_H
 
 #include "common.h"
-#include <glm/vec4.hpp>
+#include <cglm/vec4.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 // singleton
 typedef struct VertexData {
-    // glm::vec4 tris;
+    vec4* tris;
     // ignore others for now
-    float** vertexArrays;
-    int** vertexFaceArrays;
-    float** vertexTextureArrays;
-    float** vertexNormalArrays;
-    int* vertexFaceLengths; // number of tri's in each vertexFaceArray
     int objs; // number of objects that we are (attempting) to render
     int objCapacity;
 } VertexData;

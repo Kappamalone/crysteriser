@@ -18,7 +18,7 @@ int main(int argc, char* argv[]) {
         SDL_TEXTUREACCESS_STREAMING, SCREEN_WIDTH, SCREEN_HEIGHT);
 
     memset(rasteriser.framebuffer, 0x00, FRAMEBUFFER_LEN * 4);
-    rasteriser_set_color(&rasteriser, 0xffffffff);
+    set_color(&rasteriser, 0xffffffff);
 
     VertexData* vd = vertexdata_new();
     vertexdata_load_obj(vd, "../models/african_head.obj");
@@ -37,8 +37,9 @@ int main(int argc, char* argv[]) {
                 case SDL_KEYDOWN:
                     switch (e.key.keysym.sym) {
                         default:
-                            break;
+                        break;
                     }
+                    // printf("%f %f\n", x, y);
                     // TODO: there are still minor errors with the filled
                     // triangle
                     /*
@@ -60,6 +61,32 @@ int main(int argc, char* argv[]) {
 
         for (int i = 0; i < vd->objs; i++) {
             for (int j = 0; j < vd->vertexFaceLengths[i]; j += 3) {
+                int f0 = vd->vertexFaceArrays[i][j];
+                int f1 = vd->vertexFaceArrays[i][j + 1];
+                int f2 = vd->vertexFaceArrays[i][j + 2];
+
+                // take each vertex, project using matrices, then draw tris
+                float x0 = vd->vertexArrays[i][(f0 - 1) * 4];
+                float y0 = vd->vertexArrays[i][(f0 - 1) * 4 + 1];
+                float z0 = vd->vertexArrays[i][(f0 - 1) * 4 + 2];
+                float w0 = vd->vertexArrays[i][(f0 - 1) * 4 + 3];
+                float x1 = vd->vertexArrays[i][(f1 - 1) * 4];
+                float y1 = vd->vertexArrays[i][(f1 - 1) * 4 + 1];
+                float z1 = vd->vertexArrays[i][(f1 - 1) * 4 + 2];
+                float w1 = vd->vertexArrays[i][(f1 - 1) * 4 + 3];
+                float x2 = vd->vertexArrays[i][(f2 - 1) * 4];
+                float y2 = vd->vertexArrays[i][(f2 - 1) * 4 + 1];
+                float z2 = vd->vertexArrays[i][(f2 - 1) * 4 + 2];
+                float w2 = vd->vertexArrays[i][(f2 - 1) * 4 + 3];
+
+                // clang-format off
+                draw_triangle(&rasteriser,  mat0->values[0], mat0->values[1],
+                                            mat1->values[0], mat1->values[1],
+                                            mat2->values[0], mat2->values[1]);
+                // clang-format on
+
+                matrix_free(mat1);
+                matrix_free(mat0);
             }
         }
 
